@@ -1,8 +1,13 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
-const api = {}
+const api = {
+  getDataDir: () => ipcRenderer.invoke('app:getDataDir') as Promise<string | null>,
+  pickDataDir: () => ipcRenderer.invoke('app:pickDataDir') as Promise<string | null>,
+  getConfig: () => ipcRenderer.invoke('app:getConfig') as Promise<Record<string, string>>,
+  getConfigValue: (key: string) => ipcRenderer.invoke('app:getConfigValue', key) as Promise<string | null>,
+  setConfigValue: (key: string, value: string) => ipcRenderer.invoke('app:setConfigValue', key, value) as Promise<void>
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

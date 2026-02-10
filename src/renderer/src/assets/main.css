@@ -121,3 +121,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+.titlebar {
+  height: 30px;
+  border-bottom: 1px solid #e0e0e0;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  app-region: drag;
+}

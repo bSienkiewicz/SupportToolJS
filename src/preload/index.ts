@@ -6,7 +6,8 @@ const api = {
   pickDataDir: () => ipcRenderer.invoke('app:pickDataDir') as Promise<string | null>,
   getConfig: () => ipcRenderer.invoke('app:getConfig') as Promise<Record<string, string>>,
   getConfigValue: (key: string) => ipcRenderer.invoke('app:getConfigValue', key) as Promise<string | null>,
-  setConfigValue: (key: string, value: string) => ipcRenderer.invoke('app:setConfigValue', key, value) as Promise<void>
+  setConfigValue: (key: string, value: string) => ipcRenderer.invoke('app:setConfigValue', key, value) as Promise<void>,
+  getNRStacks: () => ipcRenderer.invoke('app:getNRStacks') as Promise<any[]>
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

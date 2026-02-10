@@ -1,6 +1,13 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'fs'
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  statSync,
+  readdirSync,
+} from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -115,6 +122,16 @@ app.whenReady().then(() => {
     if (!data.config) data.config = {}
     data.config[key] = value
     writeAppData(data)
+  })
+  const STACKS_PATH = 'metaform/mpm/copies/production/prd/eu-west-1'
+  ipcMain.handle('app:getNRStacks', () => {
+    const dataDir = readAppData().dataDir
+    if (!dataDir) return []
+    const stacksDir = join(dataDir, STACKS_PATH)
+    if (!existsSync(stacksDir)) return []
+    return readdirSync(stacksDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
   })
 
   createWindow()

@@ -6,6 +6,7 @@ export interface AppAPI {
   getConfig: () => Promise<Record<string, string>>
   getConfigValue: (key: string) => Promise<string | null>
   setConfigValue: (key: string, value: string) => Promise<void>
+  getNRStacks: () => Promise<any[]>
 }
 
 declare global {

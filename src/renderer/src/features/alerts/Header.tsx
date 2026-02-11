@@ -2,12 +2,13 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useState } from 'react'
 import { useEffect } from 'react'
 
-const AlertHeader = ({ title }: { title: string }) => {
+const AlertHeader = ({ title, onChange }: { title: string, onChange: (value: string) => void }) => {
     const [stacks, setStacks] = useState<string[]>([])
     const [selectedStack, setSelectedStack] = useState<string | undefined>(undefined)
 
     const handleStackChange = (value: string) => {
         setSelectedStack(value)
+        onChange(value)
         window.api.setConfigValue('selectedStack', value)
     }
 
@@ -24,7 +25,7 @@ const AlertHeader = ({ title }: { title: string }) => {
     return (
 
         <header className='flex justify-between items-center'>
-            <h1 className="text-xl font-bold">Alert Management</h1>
+            <h1 className="text-xl font-bold">{title}</h1>
             <Select
                 onValueChange={handleStackChange}
                 value={selectedStack ?? ''}

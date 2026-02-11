@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, memo, useRef, useState } from 'react'
 import AlertHeader from './Header'
 import {
   type NrAlert,
@@ -13,7 +13,6 @@ import { cn } from 'src/renderer/lib/utils'
 import { useFooter } from '@renderer/context/FooterContext'
 import {
   Field,
-  FieldGroup,
   FieldLabel,
   FieldSet,
 } from '@renderer/components/ui/field'
@@ -27,6 +26,302 @@ import {
 } from '@renderer/components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 
+const FORBIDDEN_CHARS_REGEX = /[\[\]{}]/g
+function stripForbiddenChars(s: string): string {
+  return s.replace(FORBIDDEN_CHARS_REGEX, '')
+}
+function hasForbiddenChars(s: string): boolean {
+  return /[\[\]{}]/.test(s)
+}
+
+function isExpirationDurationInvalid(alert: NrAlert): boolean {
+  if (alert.close_violations_on_expiration !== true) return false
+  const v = alert.expiration_duration
+  if (v === undefined || v === null) return true
+  const n = Number(v)
+  return Number.isNaN(n) || n < 0
+}
+
+type AlertRowProps = {
+  alert: NrAlert
+  index: number
+  updateAlert: (index: number, patch: Partial<NrAlert>) => void
+}
+
+const AlertRow = memo(function AlertRow({
+  alert,
+  index,
+  updateAlert,
+}: AlertRowProps) {
+  return (
+    <AccordionItem value={`alert-management-list-${index}`}>
+      <AccordionTrigger>
+        <div className="flex gap-2 items-center">
+          <div
+            className={cn(
+              'w-2 h-2 rounded-full',
+              alert.enabled ? 'bg-green-500' : 'bg-red-500'
+            )}
+          />
+          <span>{alert.name}</span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="p-4">
+        <FieldSet>
+          <Field>
+            <FieldLabel>Name</FieldLabel>
+            <Input
+              value={alert.name}
+              onChange={(e) =>
+                updateAlert(index, { name: stripForbiddenChars(e.target.value) })
+              }
+              aria-invalid={hasForbiddenChars(alert.name)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Severity</FieldLabel>
+            <Select
+              value={String(alert.severity)}
+              onValueChange={(value) =>
+                updateAlert(index, {
+                  severity: value as NrAlert['severity'],
+                })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select severity" />
+              </SelectTrigger>
+              <SelectContent>
+                {SEVERITY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel>Description</FieldLabel>
+            <Input
+              value={alert.description}
+              onChange={(e) =>
+                updateAlert(index, {
+                  description: stripForbiddenChars(e.target.value),
+                })
+              }
+              aria-invalid={hasForbiddenChars(alert.description)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>NRQL Query</FieldLabel>
+            <Textarea
+              value={alert.nrql_query}
+              onChange={(e) =>
+                updateAlert(index, {
+                  nrql_query: stripForbiddenChars(e.target.value),
+                })
+              }
+              className="font-mono text-sm"
+              aria-invalid={hasForbiddenChars(alert.nrql_query)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Runbook URL</FieldLabel>
+            <Input
+              value={alert.runbook_url}
+              onChange={(e) =>
+                updateAlert(index, {
+                  runbook_url: stripForbiddenChars(e.target.value),
+                })
+              }
+              aria-invalid={hasForbiddenChars(alert.runbook_url)}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-4">
+              <Field>
+                <FieldLabel>Aggregation Method</FieldLabel>
+                <Select
+                  value={String(alert.aggregation_method)}
+                  onValueChange={(value) =>
+                    updateAlert(index, {
+                      aggregation_method:
+                        value as NrAlert['aggregation_method'],
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AGGREGATION_METHOD_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Aggregation Window</FieldLabel>
+                <Input
+                  type="number"
+                  value={alert.aggregation_window}
+                  onChange={(e) =>
+                    updateAlert(index, {
+                      aggregation_window: Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Aggregation Delay</FieldLabel>
+                <Input
+                  type="number"
+                  value={alert.aggregation_delay}
+                  onChange={(e) =>
+                    updateAlert(index, {
+                      aggregation_delay: Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+            </div>
+            <div className="flex flex-col gap-4">
+              <Field>
+                <FieldLabel>Critical Operator</FieldLabel>
+                <Select
+                  value={String(alert.critical_operator)}
+                  onValueChange={(value) =>
+                    updateAlert(index, {
+                      critical_operator:
+                        value as NrAlert['critical_operator'],
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select operator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CRITICAL_OPERATOR_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Critical Threshold</FieldLabel>
+                <Input
+                  type="number"
+                  value={alert.critical_threshold}
+                  onChange={(e) =>
+                    updateAlert(index, {
+                      critical_threshold: Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Critical Threshold Duration</FieldLabel>
+                <Input
+                  type="number"
+                  value={alert.critical_threshold_duration}
+                  onChange={(e) =>
+                    updateAlert(index, {
+                      critical_threshold_duration: Number(
+                        e.target.value
+                      ),
+                    })
+                  }
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Critical Threshold Occurrences</FieldLabel>
+                <Select
+                  value={String(alert.critical_threshold_occurrences)}
+                  onValueChange={(value) =>
+                    updateAlert(index, {
+                      critical_threshold_occurrences:
+                        value as NrAlert['critical_threshold_occurrences'],
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CRITICAL_THRESHOLD_OCCURRENCES_OPTIONS.map(
+                      (opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field className="flex flex-row items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`close-viol-${index}`}
+                  checked={!!alert.close_violations_on_expiration}
+                  onChange={(e) =>
+                    updateAlert(index, {
+                      close_violations_on_expiration:
+                        e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-input"
+                />
+                <FieldLabel htmlFor={`close-viol-${index}`}>
+                  Close violations on expiration
+                </FieldLabel>
+              </Field>
+              {alert.close_violations_on_expiration === true && (
+                <Field>
+                  <FieldLabel>Expiration Duration (required)</FieldLabel>
+                  <Input
+                    type="number"
+                    value={
+                      alert.expiration_duration ??
+                      ''
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value
+                      updateAlert(index, {
+                        expiration_duration:
+                          v === '' ? undefined : Number(v),
+                      })
+                    }}
+                    aria-invalid={isExpirationDurationInvalid(alert)}
+                    min={0}
+                  />
+                </Field>
+              )}
+              <Field className="flex flex-row items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`enabled-${index}`}
+                  checked={alert.enabled}
+                  onChange={(e) =>
+                    updateAlert(index, { enabled: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-input"
+                />
+                <FieldLabel htmlFor={`enabled-${index}`}>
+                  Enabled
+                </FieldLabel>
+              </Field>
+            </div>
+          </div>
+        </FieldSet>
+      </AccordionContent>
+    </AccordionItem>
+  )
+})
+
 const AlertManagement = () => {
   const { setFooter } = useFooter()
   const [selectedStack, setSelectedStack] = useState<string | undefined>(
@@ -34,6 +329,8 @@ const AlertManagement = () => {
   )
   const [alerts, setAlerts] = useState<NrAlert[]>([])
   const [alertsFilePath, setAlertsFilePath] = useState<string | null>(null)
+  const alertsRef = useRef(alerts)
+  alertsRef.current = alerts
 
   useEffect(() => {
     window.api.getConfigValue('selectedStack').then((value) => {
@@ -49,27 +346,37 @@ const AlertManagement = () => {
     })
   }, [selectedStack])
 
-  const saveAlerts = () => {
+  const saveAlerts = useCallback(() => {
+    const current = alertsRef.current
     if (!alertsFilePath) return
-    window.api.saveNRAlertsForStack(alertsFilePath, alerts).then(({ ok }) => {
+    window.api.saveNRAlertsForStack(alertsFilePath, current).then(({ ok }) => {
       if (ok) {
         // optional: toast success
       }
     })
-  }
+  }, [alertsFilePath])
 
-  const updateAlert = (index: number, patch: Partial<NrAlert>) => {
+  const updateAlert = useCallback((index: number, patch: Partial<NrAlert>) => {
     setAlerts((prev) =>
       prev.map((a, i) => (i === index ? { ...a, ...patch } : a))
     )
-  }
+  }, [])
+
+  const hasValidationError = alerts.some(
+    (a) =>
+      isExpirationDurationInvalid(a) ||
+      hasForbiddenChars(a.name) ||
+      hasForbiddenChars(a.description) ||
+      hasForbiddenChars(a.nrql_query) ||
+      hasForbiddenChars(a.runbook_url)
+  )
 
   useEffect(() => {
     setFooter(
       <div className="flex">
         <Button
           onClick={saveAlerts}
-          disabled={!alertsFilePath}
+          disabled={!alertsFilePath || hasValidationError}
           size="xs"
           className="ml-auto"
         >
@@ -78,7 +385,7 @@ const AlertManagement = () => {
       </div>
     )
     return () => setFooter(null)
-  }, [setFooter, alertsFilePath, alerts])
+  }, [setFooter, alertsFilePath, hasValidationError])
 
   return (
     <div className="flex h-full flex-col">
@@ -89,265 +396,12 @@ const AlertManagement = () => {
         <div className="flex flex-col gap-2">
           <Accordion type="single" collapsible>
             {alerts.map((alert, index) => (
-              <AccordionItem
-                value={`alert-management-list-${index}`}
+              <AlertRow
                 key={`alert-${index}`}
-              >
-                <AccordionTrigger>
-                  <div className="flex gap-2 items-center">
-                    <div
-                      className={cn(
-                        'w-2 h-2 rounded-full',
-                        alert.enabled ? 'bg-green-500' : 'bg-red-500'
-                      )}
-                    />
-                    <span>{alert.name}</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="p-4">
-                  <FieldSet>
-                      <Field>
-                        <FieldLabel>Name</FieldLabel>
-                        <Input
-                          value={alert.name}
-                          onChange={(e) =>
-                            updateAlert(index, { name: e.target.value })
-                          }
-                        />
-                      </Field>
-                      <Field>
-                        <FieldLabel>Severity</FieldLabel>
-                        <Select
-                          value={String(alert.severity)}
-                          onValueChange={(value) =>
-                            updateAlert(index, {
-                              severity: value as NrAlert['severity'],
-                            })
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select severity" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SEVERITY_OPTIONS.map((opt) => (
-                              <SelectItem key={opt} value={opt}>
-                                {opt}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                      <Field>
-                        <FieldLabel>Description</FieldLabel>
-                        <Input
-                          value={alert.description}
-                          onChange={(e) =>
-                            updateAlert(index, { description: e.target.value })
-                          }
-                        />
-                      </Field>
-                      <Field>
-                        <FieldLabel>NRQL Query</FieldLabel>
-                        <Textarea
-                          value={alert.nrql_query}
-                          onChange={(e) =>
-                            updateAlert(index, { nrql_query: e.target.value })
-                          }
-                          className="font-mono text-sm"
-                        />
-                      </Field>
-                      <Field>
-                        <FieldLabel>Runbook URL</FieldLabel>
-                        <Input
-                          value={alert.runbook_url}
-                          onChange={(e) =>
-                            updateAlert(index, { runbook_url: e.target.value })
-                          }
-                        />
-                      </Field>
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="flex flex-col gap-4">
-                          <h4 className="text-sm font-medium text-muted-foreground">
-                            Aggregation
-                          </h4>
-                          <Field>
-                            <FieldLabel>Method</FieldLabel>
-                            <Select
-                              value={String(alert.aggregation_method)}
-                              onValueChange={(value) =>
-                                updateAlert(index, {
-                                  aggregation_method:
-                                    value as NrAlert['aggregation_method'],
-                                })
-                              }
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select method" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {AGGREGATION_METHOD_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt} value={opt}>
-                                    {opt}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                          <Field>
-                            <FieldLabel>Window</FieldLabel>
-                            <Input
-                              type="number"
-                              value={alert.aggregation_window}
-                              onChange={(e) =>
-                                updateAlert(index, {
-                                  aggregation_window: Number(e.target.value),
-                                })
-                              }
-                            />
-                          </Field>
-                          <Field>
-                            <FieldLabel>Delay</FieldLabel>
-                            <Input
-                              type="number"
-                              value={alert.aggregation_delay}
-                              onChange={(e) =>
-                                updateAlert(index, {
-                                  aggregation_delay: Number(e.target.value),
-                                })
-                              }
-                            />
-                          </Field>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                          <h4 className="text-sm font-medium text-muted-foreground">
-                            Critical
-                          </h4>
-                          <Field>
-                            <FieldLabel>Operator</FieldLabel>
-                            <Select
-                              value={String(alert.critical_operator)}
-                              onValueChange={(value) =>
-                                updateAlert(index, {
-                                  critical_operator:
-                                    value as NrAlert['critical_operator'],
-                                })
-                              }
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select operator" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {CRITICAL_OPERATOR_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt} value={opt}>
-                                    {opt}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                          <Field>
-                            <FieldLabel>Threshold</FieldLabel>
-                            <Input
-                              type="number"
-                              value={alert.critical_threshold}
-                              onChange={(e) =>
-                                updateAlert(index, {
-                                  critical_threshold: Number(e.target.value),
-                                })
-                              }
-                            />
-                          </Field>
-                          <Field>
-                            <FieldLabel>Threshold duration</FieldLabel>
-                            <Input
-                              type="number"
-                              value={alert.critical_threshold_duration}
-                              onChange={(e) =>
-                                updateAlert(index, {
-                                  critical_threshold_duration: Number(
-                                    e.target.value
-                                  ),
-                                })
-                              }
-                            />
-                          </Field>
-                          <Field>
-                            <FieldLabel>Threshold occurrences</FieldLabel>
-                            <Select
-                              value={String(alert.critical_threshold_occurrences)}
-                              onValueChange={(value) =>
-                                updateAlert(index, {
-                                  critical_threshold_occurrences:
-                                    value as NrAlert['critical_threshold_occurrences'],
-                                })
-                              }
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {CRITICAL_THRESHOLD_OCCURRENCES_OPTIONS.map(
-                                  (opt) => (
-                                    <SelectItem key={opt} value={opt}>
-                                      {opt}
-                                    </SelectItem>
-                                  )
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                          {alert.expiration_duration != null && (
-                            <Field>
-                              <FieldLabel>Expiration duration</FieldLabel>
-                              <Input
-                                type="number"
-                                value={alert.expiration_duration}
-                                onChange={(e) =>
-                                  updateAlert(index, {
-                                    expiration_duration: Number(e.target.value),
-                                  })
-                                }
-                              />
-                            </Field>
-                          )}
-                          <Field className="flex flex-row items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`enabled-${index}`}
-                              checked={alert.enabled}
-                              onChange={(e) =>
-                                updateAlert(index, { enabled: e.target.checked })
-                              }
-                              className="h-4 w-4 rounded border-input"
-                            />
-                            <FieldLabel htmlFor={`enabled-${index}`}>
-                              Enabled
-                            </FieldLabel>
-                          </Field>
-                          {alert.close_violations_on_expiration != null && (
-                            <Field className="flex flex-row items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id={`close-viol-${index}`}
-                                checked={!!alert.close_violations_on_expiration}
-                                onChange={(e) =>
-                                  updateAlert(index, {
-                                    close_violations_on_expiration:
-                                      e.target.checked,
-                                  })
-                                }
-                                className="h-4 w-4 rounded border-input"
-                              />
-                              <FieldLabel htmlFor={`close-viol-${index}`}>
-                                Close violations on expiration
-                              </FieldLabel>
-                            </Field>
-                          )}
-                        </div>
-                      </div>
-                  </FieldSet>
-                </AccordionContent>
-              </AccordionItem>
+                alert={alert}
+                index={index}
+                updateAlert={updateAlert}
+              />
             ))}
           </Accordion>
         </div>

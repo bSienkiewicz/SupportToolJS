@@ -149,15 +149,65 @@ export function parseNrNrqlAlerts(content: string): ParseResult | null {
   return { alerts }
 }
 
+/** Key order for serialization to match original tfvars style. */
+const ALERT_KEY_ORDER = [
+  'name',
+  'description',
+  'nrql_query',
+  'runbook_url',
+  'severity',
+  'enabled',
+  'aggregation_method',
+  'aggregation_window',
+  'aggregation_delay',
+  'critical_operator',
+  'critical_threshold',
+  'critical_threshold_duration',
+  'critical_threshold_occurrences',
+  'expiration_duration',
+  'close_violations_on_expiration',
+  'open_violation_on_expiration',
+  'fill_option',
+  'fill_value',
+  'title_template',
+  'ignore_on_expected_termination',
+  'policy_id',
+] as const
+
+const ORDERED_KEYS_SET = new Set(ALERT_KEY_ORDER)
+
+function escapeStringValue(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+function formatAlertValue(v: string | number | boolean | undefined): string {
+  if (typeof v === 'boolean') return v ? 'true' : 'false'
+  if (typeof v === 'number') return String(v)
+  if (v === undefined) return 'null'
+  return `"${escapeStringValue(String(v))}"`
+}
+
+function shouldOmitKey(alert: NrAlert, k: string): boolean {
+  if (k === 'close_violations_on_expiration') return alert.close_violations_on_expiration !== true
+  if (k === 'expiration_duration') return alert.close_violations_on_expiration !== true
+  return false
+}
+
 function serializeAlert(alert: NrAlert): string {
-  const lines = Object.entries(alert).map(([k, v]) => {
+  const ordered: Array<[string, string | number | boolean | undefined]> = []
+  for (const k of ALERT_KEY_ORDER) {
+    if (k in alert && !shouldOmitKey(alert, k)) {
+      ordered.push([k, alert[k]])
+    }
+  }
+  const rest = Object.entries(alert).filter(
+    ([k]) =>
+      !ORDERED_KEYS_SET.has(k as (typeof ALERT_KEY_ORDER)[number]) &&
+      !shouldOmitKey(alert, k)
+  )
+  const lines = [...ordered, ...rest].map(([k, v]) => {
     const key = `"${k.replace(/"/g, '\\"')}"`
-    let val: string
-    if (typeof v === 'boolean') val = v ? 'true' : 'false'
-    else if (typeof v === 'number') val = String(v)
-    else if (v === undefined) val = 'null'
-    else val = `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-    return `    ${key} = ${val}`
+    return `    ${key} = ${formatAlertValue(v)}`
   })
   return `  {\n${lines.join('\n')}\n  }`
 }

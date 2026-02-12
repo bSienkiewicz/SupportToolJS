@@ -24,7 +24,7 @@ const AlertHeader = ({ title, onChange }: { title: string, onChange: (value: str
 
     return (
 
-        <header className='flex justify-between items-center'>
+        <header className='flex justify-between items-center border-b pb-2'>
             <h1 className="text-xl font-bold">{title}</h1>
             <Select
                 onValueChange={handleStackChange}

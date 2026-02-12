@@ -24,7 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@renderer/components/ui/select'
-import { Textarea } from '../../components/ui/textarea'
+import { Textarea } from '@renderer/components/ui/textarea'
+import { ButtonGroup } from '@renderer/components/ui/button-group'
+import { LucideUndo2 } from 'lucide-react'
 
 const FORBIDDEN_CHARS_REGEX = /[\[\]{}]/g
 function stripForbiddenChars(s: string): string {
@@ -55,7 +57,7 @@ const AlertRow = memo(function AlertRow({
 }: AlertRowProps) {
   return (
     <AccordionItem value={`alert-management-list-${index}`}>
-      <AccordionTrigger>
+      <AccordionTrigger headerClassName="sticky top-0 z-10 bg-background data-[state=open]:border-b">
         <div className="flex gap-2 items-center">
           <div
             className={cn(
@@ -323,6 +325,7 @@ const AlertRow = memo(function AlertRow({
 })
 
 const AlertManagement = () => {
+  const [changedAlerts, setChangedAlerts] = useState<Set<number>>(new Set())
   const { setFooter } = useFooter()
   const [selectedStack, setSelectedStack] = useState<string | undefined>(
     undefined
@@ -331,7 +334,7 @@ const AlertManagement = () => {
   const [alertsFilePath, setAlertsFilePath] = useState<string | null>(null)
   const alertsRef = useRef(alerts)
   alertsRef.current = alerts
-
+  const [openResetDialog, setOpenResetDialog] = useState(false)
   useEffect(() => {
     window.api.getConfigValue('selectedStack').then((value) => {
       if (value) setSelectedStack(value)
@@ -343,6 +346,7 @@ const AlertManagement = () => {
     window.api.getNRAlertsForStack(selectedStack).then((result) => {
       setAlerts(result.alerts)
       setAlertsFilePath(result.filePath)
+      setChangedAlerts(new Set())
     })
   }, [selectedStack])
 
@@ -351,7 +355,7 @@ const AlertManagement = () => {
     if (!alertsFilePath) return
     window.api.saveNRAlertsForStack(alertsFilePath, current).then(({ ok }) => {
       if (ok) {
-        // optional: toast success
+        setChangedAlerts(new Set())
       }
     })
   }, [alertsFilePath])
@@ -360,7 +364,16 @@ const AlertManagement = () => {
     setAlerts((prev) =>
       prev.map((a, i) => (i === index ? { ...a, ...patch } : a))
     )
+    setChangedAlerts((prev) => new Set(prev).add(index))
   }, [])
+
+  const handleResetChanges = useCallback(() => {
+    setAlerts((prev) =>
+      prev.map((a) => ({ ...a, enabled: true }))
+    )
+    setChangedAlerts(new Set())
+    setOpenResetDialog(false)
+  }, [setOpenResetDialog])
 
   const hasValidationError = alerts.some(
     (a) =>
@@ -373,19 +386,24 @@ const AlertManagement = () => {
 
   useEffect(() => {
     setFooter(
-      <div className="flex">
-        <Button
-          onClick={saveAlerts}
-          disabled={!alertsFilePath || hasValidationError}
-          size="xs"
-          className="ml-auto"
-        >
-          Save changes
-        </Button>
+      <div className="flex gap-2">
+        <ButtonGroup className='ml-auto'>
+          <Button onClick={() => setOpenResetDialog(true)} disabled={changedAlerts.size === 0} size="xs" variant="outline">
+            <LucideUndo2 />
+          </Button>
+          <Button
+            onClick={saveAlerts}
+            disabled={!alertsFilePath || hasValidationError}
+            size="xs"
+          >
+            Save changes <span className="text-xs text-muted-foreground">+{changedAlerts.size}</span>
+          </Button>
+        </ButtonGroup>
       </div>
     )
     return () => setFooter(null)
-  }, [setFooter, alertsFilePath, hasValidationError])
+  }, [setFooter, alertsFilePath, hasValidationError, changedAlerts.size])
+
 
   return (
     <div className="flex h-full flex-col">

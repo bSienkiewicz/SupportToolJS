@@ -18,6 +18,10 @@ export interface AppAPI {
     filePath: string,
     alerts: NrAlert[]
   ) => Promise<{ ok: boolean }>
+  executeNrql: (nrqlQuery: string) => Promise<{
+    data: unknown[] | null
+    error: string | null
+  }>
 }
 
 declare global {

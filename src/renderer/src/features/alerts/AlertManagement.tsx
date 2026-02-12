@@ -577,6 +577,7 @@ const AlertManagement = () => {
       <div className="shrink-0">
         <AlertHeader
           title="Alert Management"
+          showItems={['search', 'refetch', 'addAlert']}
           onChange={setSelectedStack}
           onSearch={setSearch}
           onRefetch={handleRefetch}

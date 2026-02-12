@@ -5,7 +5,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/componen
 import { LucidePlus, LucideRefreshCcw, LucideSearch } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 
-const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled, onAddAlert }: { title: string, onChange: (value: string) => void, onSearch: (value: string) => void, onRefetch: () => void, refetchDisabled?: boolean, onAddAlert: () => void }) => {
+const AlertHeader = ({ title, showItems, onChange, onSearch, onRefetch, refetchDisabled, onAddAlert }: { title: string, showItems: string[], onChange: (value: string) => void, onSearch: (value: string) => void, onRefetch: () => void, refetchDisabled?: boolean, onAddAlert: () => void }) => {
     const [stacks, setStacks] = useState<string[]>([])
     const [selectedStack, setSelectedStack] = useState<string | undefined>(undefined)
     const [search, setSearch] = useState<string>('')
@@ -62,6 +62,7 @@ const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled, on
                 </Select>
             </div>
             <div className='mt-2 flex gap-2'>
+                {showItems.includes('search') && (
                 <InputGroup>
                     <InputGroupInput
                         type="text"
@@ -73,12 +74,17 @@ const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled, on
                         <LucideSearch />
                     </InputGroupAddon>
                 </InputGroup>
+                )}
+                {showItems.includes('refetch') && (
                 <Button variant="outline" onClick={handleRefetch} disabled={refetchDisabled}>
                     <LucideRefreshCcw />
                 </Button>
+                )}
+                {showItems.includes('addAlert') && (
                 <Button variant="outline" onClick={handleAddAlert} disabled={refetchDisabled}>
                     <LucidePlus />
                 </Button>
+                )}
             </div>
         </header>
     )

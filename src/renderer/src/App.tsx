@@ -6,6 +6,7 @@ import { ROUTES, getPathFromHash } from './routes'
 import AlertManagement from './features/alerts/AlertManagement'
 import AlertThresholds from './features/alerts/AlertThresholds'
 import { FooterProvider, FooterSlot } from './context/FooterContext'
+import AlertAudit from './features/alerts/AlertAudit'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)
@@ -35,6 +36,7 @@ function App(): React.JSX.Element {
           {page === ROUTES.SETTINGS && <SettingsPage />}
           {page === ROUTES.ALERTS && <div className="p-6">Alerts</div>}
           {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
+          {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
           {page === ROUTES.ALERTS_THRESHOLDS && <AlertThresholds />}
           <Toaster />
         </main>

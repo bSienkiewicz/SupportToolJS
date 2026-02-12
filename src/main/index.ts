@@ -16,7 +16,13 @@ import {
   getBlockRange,
   type NrAlert,
 } from './nrAlertsHcl'
-
+import {
+  getApiKey,
+  buildNrqlGraphQLQuery,
+  executeGraphQLQuery,
+  extractResultsArray,
+  type NrqlResponse,
+} from './newRelicHelper'
 const APP_DATA_FILE = 'app-data.json'
 
 interface AppData {
@@ -178,6 +184,24 @@ app.whenReady().then(() => {
       )
       writeFileSync(filePath, newContent, 'utf-8')
       return { ok: true }
+    }
+  )
+
+  // Execute NRQL via New Relic GraphQL API; returns results array or error.
+  ipcMain.handle(
+    'app:executeNrql',
+    async (_e, nrqlQuery: string): Promise<{ data: unknown[] | null; error: string | null }> => {
+      try {
+        const config = readAppData().config
+        const apiKey = getApiKey(config)
+        const graphqlQuery = buildNrqlGraphQLQuery(nrqlQuery)
+        const response = await executeGraphQLQuery<NrqlResponse>(graphqlQuery, apiKey)
+        const results = extractResultsArray(response)
+        return { data: results, error: null }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return { data: null, error: message }
+      }
     }
   )
 

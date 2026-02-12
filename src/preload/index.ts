@@ -20,6 +20,11 @@ const api = {
     ipcRenderer.invoke('app:saveNRAlertsForStack', filePath, alerts) as Promise<{
       ok: boolean
     }>,
+  executeNrql: (nrqlQuery: string) =>
+    ipcRenderer.invoke('app:executeNrql', nrqlQuery) as Promise<{
+      data: unknown[] | null
+      error: string | null
+    }>,
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

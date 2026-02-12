@@ -1,11 +1,11 @@
 import React from 'react'
-import AlertHeader from './AlertHeader'
+import AlertHeader from './Header'
 
 const AlertThresholds = () => {
   return (
     <div className="px-3">
-      <AlertHeader title="Alert Thresholds" />
-    </div>
+      <AlertHeader title="Alert Thresholds" onChange={() => {}} onSearch={() => {}} onRefetch={() => {}} onAddAlert={() => {}} />
+    </div>  
   )
 }
 

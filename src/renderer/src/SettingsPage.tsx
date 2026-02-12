@@ -40,31 +40,29 @@ const SettingsPage = () => {
     }
 
     return (
-        <section>
-            <div className="min-h-screen p-6 space-y-8">
-                <section className="space-y-2">
-                    <h2 className="text-sm font-medium text-muted-foreground">Data directory</h2>
-                    <p className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">
-                        {dataDir ?? 'Not set'}
-                    </p>
-                    <Button onClick={pickDir}>Pick directory</Button>
-                </section>
+        <div className="p-6 space-y-8">
+            <section className="space-y-2">
+                <h2 className="text-sm font-medium text-muted-foreground">Data directory</h2>
+                <p className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">
+                    {dataDir ?? 'Not set'}
+                </p>
+                <Button onClick={pickDir}>Pick directory</Button>
+            </section>
 
-                <section className="space-y-2">
-                    <h2 className="text-sm font-medium text-muted-foreground">API Key</h2>
-                    <div className="flex gap-2 flex-wrap">
-                        <Input
-                            type="text"
-                            placeholder="API key"
-                            value={apiKey}
-                            onBlur={handleApiKeyBlur}
-                            onChange={handleApiKeyChange}
-                            className="border rounded px-2 py-1.5 text-sm w-64"
-                        />
-                    </div>
-                </section>
-            </div>
-        </section>
+            <section className="space-y-2">
+                <h2 className="text-sm font-medium text-muted-foreground">API Key</h2>
+                <div className="flex gap-2 flex-wrap">
+                    <Input
+                        type="text"
+                        placeholder="API key"
+                        value={apiKey}
+                        onBlur={handleApiKeyBlur}
+                        onChange={handleApiKeyChange}
+                        className="border rounded px-2 py-1.5 text-sm w-64"
+                    />
+                </div>
+            </section>
+        </div>
     )
 }
 

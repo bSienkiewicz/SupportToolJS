@@ -10,6 +10,12 @@ import {
 } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import {
+  parseNrNrqlAlerts,
+  replaceNrNrqlAlerts,
+  getBlockRange,
+  type NrAlert,
+} from './nrAlertsHcl'
 
 const APP_DATA_FILE = 'app-data.json'
 
@@ -86,10 +92,12 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  // IPC handlers
 
+  // Get data directory
   ipcMain.handle('app:getDataDir', () => readAppData().dataDir ?? null)
+
+  // Pick data directory
   ipcMain.handle('app:pickDataDir', async () => {
     const requiredDirs = ['.git', 'ansible', 'metaform']
     const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
@@ -115,14 +123,20 @@ app.whenReady().then(() => {
     writeAppData(data)
     return dir
   })
+
+  // Get config
   ipcMain.handle('app:getConfig', () => readAppData().config ?? {})
   ipcMain.handle('app:getConfigValue', (_e, key: string) => readAppData().config?.[key] ?? null)
+
+  // Set config value
   ipcMain.handle('app:setConfigValue', (_e, key: string, value: string) => {
     const data = readAppData()
     if (!data.config) data.config = {}
     data.config[key] = value
     writeAppData(data)
   })
+
+  // Get NR stacks
   const STACKS_PATH = 'metaform/mpm/copies/production/prd/eu-west-1'
   ipcMain.handle('app:getNRStacks', () => {
     const dataDir = readAppData().dataDir
@@ -133,6 +147,39 @@ app.whenReady().then(() => {
       .filter((d) => d.isDirectory())
       .map((d) => d.name)
   })
+
+  // Get NR alerts for stack (hcl2-parser only; returns alerts + filePath for save)
+  ipcMain.handle('app:getNRAlertsForStack', (_e, stack: string) => {
+    const dataDir = readAppData().dataDir
+    if (!dataDir)
+      return { alerts: [], filePath: null, error: 'no_data_dir' as const }
+    const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
+    if (!existsSync(filePath))
+      return { alerts: [], filePath: null, error: 'file_not_found' as const }
+    const content = readFileSync(filePath, 'utf-8')
+    const parsed = parseNrNrqlAlerts(content)
+    if (!parsed)
+      return { alerts: [], filePath, error: 'parse_failed' as const }
+    return { alerts: parsed.alerts, filePath, error: null }
+  })
+
+  ipcMain.handle(
+    'app:saveNRAlertsForStack',
+    (_e, filePath: string, alerts: NrAlert[]) => {
+      if (!filePath || !existsSync(filePath)) return { ok: false }
+      const content = readFileSync(filePath, 'utf-8')
+      const range = getBlockRange(content)
+      if (!range) return { ok: false }
+      const newContent = replaceNrNrqlAlerts(
+        content,
+        alerts,
+        range.start,
+        range.end
+      )
+      writeFileSync(filePath, newContent, 'utf-8')
+      return { ok: true }
+    }
+  )
 
   createWindow()
 

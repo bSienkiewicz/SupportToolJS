@@ -1,4 +1,4 @@
-import { useCallback, useEffect, memo, useRef, useState } from 'react'
+import { useCallback, useEffect, memo, useMemo, useRef, useState } from 'react'
 import AlertHeader from './Header'
 import {
   type NrAlert,
@@ -13,6 +13,7 @@ import { cn } from 'src/renderer/lib/utils'
 import { useFooter } from '@renderer/context/FooterContext'
 import {
   Field,
+  FieldContent,
   FieldLabel,
   FieldSet,
 } from '@renderer/components/ui/field'
@@ -26,7 +27,18 @@ import {
 } from '@renderer/components/ui/select'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { ButtonGroup } from '@renderer/components/ui/button-group'
-import { LucideUndo2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@renderer/components/ui/dialog'
+import { LucideTrash2, LucideUndo2 } from 'lucide-react'
+import { Spinner } from '../../components/ui/spinner'
+import { Switch } from '../../components/ui/switch'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../components/ui/input-group'
 
 const FORBIDDEN_CHARS_REGEX = /[\[\]{}]/g
 function stripForbiddenChars(s: string): string {
@@ -46,17 +58,20 @@ function isExpirationDurationInvalid(alert: NrAlert): boolean {
 
 type AlertRowProps = {
   alert: NrAlert
-  index: number
+  originalIndex: number
   updateAlert: (index: number, patch: Partial<NrAlert>) => void
+  search: string
+  handleDeleteAlert: (index: number) => void
 }
 
 const AlertRow = memo(function AlertRow({
   alert,
-  index,
+  originalIndex,
   updateAlert,
+  handleDeleteAlert,
 }: AlertRowProps) {
   return (
-    <AccordionItem value={`alert-management-list-${index}`}>
+    <AccordionItem value={`alert-management-list-${originalIndex}`}>
       <AccordionTrigger headerClassName="sticky top-0 z-10 bg-background data-[state=open]:border-b">
         <div className="flex gap-2 items-center">
           <div
@@ -75,7 +90,7 @@ const AlertRow = memo(function AlertRow({
             <Input
               value={alert.name}
               onChange={(e) =>
-                updateAlert(index, { name: stripForbiddenChars(e.target.value) })
+                updateAlert(originalIndex, { name: stripForbiddenChars(e.target.value) })
               }
               aria-invalid={hasForbiddenChars(alert.name)}
             />
@@ -85,7 +100,7 @@ const AlertRow = memo(function AlertRow({
             <Select
               value={String(alert.severity)}
               onValueChange={(value) =>
-                updateAlert(index, {
+                updateAlert(originalIndex, {
                   severity: value as NrAlert['severity'],
                 })
               }
@@ -107,7 +122,7 @@ const AlertRow = memo(function AlertRow({
             <Input
               value={alert.description}
               onChange={(e) =>
-                updateAlert(index, {
+                updateAlert(originalIndex, {
                   description: stripForbiddenChars(e.target.value),
                 })
               }
@@ -119,7 +134,7 @@ const AlertRow = memo(function AlertRow({
             <Textarea
               value={alert.nrql_query}
               onChange={(e) =>
-                updateAlert(index, {
+                updateAlert(originalIndex, {
                   nrql_query: stripForbiddenChars(e.target.value),
                 })
               }
@@ -132,7 +147,7 @@ const AlertRow = memo(function AlertRow({
             <Input
               value={alert.runbook_url}
               onChange={(e) =>
-                updateAlert(index, {
+                updateAlert(originalIndex, {
                   runbook_url: stripForbiddenChars(e.target.value),
                 })
               }
@@ -146,7 +161,7 @@ const AlertRow = memo(function AlertRow({
                 <Select
                   value={String(alert.aggregation_method)}
                   onValueChange={(value) =>
-                    updateAlert(index, {
+                    updateAlert(originalIndex, {
                       aggregation_method:
                         value as NrAlert['aggregation_method'],
                     })
@@ -166,27 +181,37 @@ const AlertRow = memo(function AlertRow({
               </Field>
               <Field>
                 <FieldLabel>Aggregation Window</FieldLabel>
-                <Input
-                  type="number"
-                  value={alert.aggregation_window}
-                  onChange={(e) =>
-                    updateAlert(index, {
-                      aggregation_window: Number(e.target.value),
-                    })
-                  }
-                />
+                <InputGroup>
+                  <InputGroupInput
+                    type="number"
+                    value={alert.aggregation_window}
+                    onChange={(e) =>
+                      updateAlert(originalIndex, {
+                        aggregation_window: Number(e.target.value),
+                      })
+                    }
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <span>seconds</span>
+                  </InputGroupAddon>
+                </InputGroup>
               </Field>
               <Field>
                 <FieldLabel>Aggregation Delay</FieldLabel>
-                <Input
+                <InputGroup>
+                  <InputGroupInput
                   type="number"
-                  value={alert.aggregation_delay}
-                  onChange={(e) =>
-                    updateAlert(index, {
-                      aggregation_delay: Number(e.target.value),
-                    })
-                  }
-                />
+                    value={alert.aggregation_delay}
+                    onChange={(e) =>
+                      updateAlert(originalIndex, {
+                        aggregation_delay: Number(e.target.value),
+                      })
+                    }
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <span>seconds</span>
+                  </InputGroupAddon>
+                </InputGroup>
               </Field>
             </div>
             <div className="flex flex-col gap-4">
@@ -195,7 +220,7 @@ const AlertRow = memo(function AlertRow({
                 <Select
                   value={String(alert.critical_operator)}
                   onValueChange={(value) =>
-                    updateAlert(index, {
+                    updateAlert(originalIndex, {
                       critical_operator:
                         value as NrAlert['critical_operator'],
                     })
@@ -219,7 +244,7 @@ const AlertRow = memo(function AlertRow({
                   type="number"
                   value={alert.critical_threshold}
                   onChange={(e) =>
-                    updateAlert(index, {
+                    updateAlert(originalIndex, {
                       critical_threshold: Number(e.target.value),
                     })
                   }
@@ -227,24 +252,27 @@ const AlertRow = memo(function AlertRow({
               </Field>
               <Field>
                 <FieldLabel>Critical Threshold Duration</FieldLabel>
-                <Input
-                  type="number"
-                  value={alert.critical_threshold_duration}
-                  onChange={(e) =>
-                    updateAlert(index, {
-                      critical_threshold_duration: Number(
-                        e.target.value
-                      ),
-                    })
-                  }
-                />
+                <InputGroup>
+                  <InputGroupInput
+                    type="number"
+                    value={alert.critical_threshold_duration}
+                    onChange={(e) =>
+                      updateAlert(originalIndex, {
+                        critical_threshold_duration: Number(e.target.value),
+                      })
+                    }
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <span>seconds</span>
+                  </InputGroupAddon>
+                </InputGroup>
               </Field>
               <Field>
                 <FieldLabel>Critical Threshold Occurrences</FieldLabel>
                 <Select
                   value={String(alert.critical_threshold_occurrences)}
                   onValueChange={(value) =>
-                    updateAlert(index, {
+                    updateAlert(originalIndex, {
                       critical_threshold_occurrences:
                         value as NrAlert['critical_threshold_occurrences'],
                     })
@@ -264,58 +292,57 @@ const AlertRow = memo(function AlertRow({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field className="flex flex-row items-center gap-2">
-                <input
-                  type="checkbox"
-                  id={`close-viol-${index}`}
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor={`enabled-${originalIndex}`}>Enabled</FieldLabel>
+                </FieldContent>
+                <Switch
+                  id={`enabled-${originalIndex}`}
+                  checked={alert.enabled}
+                  onCheckedChange={(checked) =>
+                    updateAlert(originalIndex, { enabled: checked })
+                  }
+                />
+              </Field>
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor={`close-violations-on-expiration-${originalIndex}`}>Close violations on expiration</FieldLabel>
+                </FieldContent>
+                <Switch
+                  id={`close-violations-on-expiration-${originalIndex}`}
                   checked={!!alert.close_violations_on_expiration}
-                  onChange={(e) =>
-                    updateAlert(index, {
-                      close_violations_on_expiration:
-                        e.target.checked,
+                  onCheckedChange={(checked) =>
+                    updateAlert(originalIndex, {
+                      close_violations_on_expiration: checked,
                     })
                   }
-                  className="h-4 w-4 rounded border-input"
                 />
-                <FieldLabel htmlFor={`close-viol-${index}`}>
-                  Close violations on expiration
-                </FieldLabel>
               </Field>
               {alert.close_violations_on_expiration === true && (
                 <Field>
                   <FieldLabel>Expiration Duration (required)</FieldLabel>
-                  <Input
-                    type="number"
-                    value={
-                      alert.expiration_duration ??
-                      ''
-                    }
-                    onChange={(e) => {
-                      const v = e.target.value
-                      updateAlert(index, {
-                        expiration_duration:
-                          v === '' ? undefined : Number(v),
-                      })
-                    }}
-                    aria-invalid={isExpirationDurationInvalid(alert)}
-                    min={0}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      type="number"
+                      value={alert.expiration_duration ?? ''}
+                      onChange={e =>
+                        updateAlert(originalIndex, {
+                          expiration_duration: Number(e.target.value),
+                        })
+                      }
+                      min={0}
+                      aria-invalid={isExpirationDurationInvalid(alert)}
+                    />
+                    <InputGroupAddon  align="inline-end">
+                      <span>seconds</span>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </Field>
               )}
-              <Field className="flex flex-row items-center gap-2">
-                <input
-                  type="checkbox"
-                  id={`enabled-${index}`}
-                  checked={alert.enabled}
-                  onChange={(e) =>
-                    updateAlert(index, { enabled: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-input"
-                />
-                <FieldLabel htmlFor={`enabled-${index}`}>
-                  Enabled
-                </FieldLabel>
-              </Field>
+              <Button variant="destructive" size="sm" onClick={() => handleDeleteAlert(originalIndex)}>
+                <LucideTrash2 />
+                <span>Delete alert</span>
+              </Button>
             </div>
           </div>
         </FieldSet>
@@ -330,11 +357,24 @@ const AlertManagement = () => {
   const [selectedStack, setSelectedStack] = useState<string | undefined>(
     undefined
   )
+  const [loading, setLoading] = useState(false)
   const [alerts, setAlerts] = useState<NrAlert[]>([])
   const [alertsFilePath, setAlertsFilePath] = useState<string | null>(null)
   const alertsRef = useRef(alerts)
   alertsRef.current = alerts
   const [openResetDialog, setOpenResetDialog] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filteredAlertsWithIndex = useMemo(
+    () =>
+      alerts
+        .map((alert, originalIndex) => ({ alert, originalIndex }))
+        .filter(({ alert }) =>
+          alert.name.toLowerCase().includes(search.toLowerCase().trim()) || alert.nrql_query.toLowerCase().includes(search.toLowerCase().trim())
+        ),
+    [alerts, search]
+  )
+
   useEffect(() => {
     window.api.getConfigValue('selectedStack').then((value) => {
       if (value) setSelectedStack(value)
@@ -343,10 +383,17 @@ const AlertManagement = () => {
 
   useEffect(() => {
     if (!selectedStack) return
+    setLoading(true)
+    setAlerts([])
+    setSearch('')
     window.api.getNRAlertsForStack(selectedStack).then((result) => {
       setAlerts(result.alerts)
       setAlertsFilePath(result.filePath)
       setChangedAlerts(new Set())
+      setLoading(false)
+    }).catch(() => {
+      setAlerts([])
+      setLoading(false)
     })
   }, [selectedStack])
 
@@ -368,12 +415,51 @@ const AlertManagement = () => {
   }, [])
 
   const handleResetChanges = useCallback(() => {
-    setAlerts((prev) =>
-      prev.map((a) => ({ ...a, enabled: true }))
-    )
+    if (!selectedStack) {
+      setOpenResetDialog(false)
+      return
+    }
+    setLoading(true)
+    window.api.getNRAlertsForStack(selectedStack).then((result) => {
+      setAlerts(result.alerts)
+      setAlertsFilePath(result.filePath)
+      setChangedAlerts(new Set())
+      setOpenResetDialog(false)
+      setLoading(false)
+    }).catch(() => {
+      setLoading(false)
+      setOpenResetDialog(false)
+    })
+  }, [selectedStack])
+
+  const handleRefetch = useCallback(() => {
+    if (!selectedStack) return
+    setLoading(true)
+    setAlerts([])
+    setAlertsFilePath(null)
     setChangedAlerts(new Set())
-    setOpenResetDialog(false)
-  }, [setOpenResetDialog])
+    window.api.getNRAlertsForStack(selectedStack).then((result) => {
+      setAlerts(result.alerts)
+      setAlertsFilePath(result.filePath)
+      setChangedAlerts(new Set())
+    }).catch(() => {
+      // keep current state on error
+    }).finally(() => {
+      setLoading(false)
+    })
+  }, [selectedStack])
+
+  const handleDeleteAlert = useCallback((index: number) => {
+    setAlerts((prev) => prev.filter((_, i) => i !== index))
+    setChangedAlerts((prev) => {
+      const next = new Set<number>()
+      prev.forEach((i) => {
+        if (i < index) next.add(i)
+        else if (i > index) next.add(i - 1)
+      })
+      return next
+    })
+  }, [])
 
   const hasValidationError = alerts.some(
     (a) =>
@@ -408,22 +494,70 @@ const AlertManagement = () => {
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0">
-        <AlertHeader title="Alert Management" onChange={setSelectedStack} />
+        <AlertHeader
+          title="Alert Management"
+          onChange={setSelectedStack}
+          onSearch={setSearch}
+          onRefetch={handleRefetch}
+          refetchDisabled={!selectedStack}
+        />
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex flex-col gap-2">
           <Accordion type="single" collapsible>
-            {alerts.map((alert, index) => (
+            {filteredAlertsWithIndex.map(({ alert, originalIndex }) => (
               <AlertRow
-                key={`alert-${index}`}
+                key={`alert-${originalIndex}`}
                 alert={alert}
-                index={index}
+                originalIndex={originalIndex}
                 updateAlert={updateAlert}
+                search={search}
+                handleDeleteAlert={handleDeleteAlert}
               />
             ))}
           </Accordion>
+          {loading && (
+            <div className="py-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <Spinner />
+              <span>Loading alerts...</span>
+            </div>
+          )}
+          {alerts.length === 0 && !loading && (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No alerts loaded. Select a stack above.
+            </p>
+          )}
+          {alerts.length > 0 && filteredAlertsWithIndex.length === 0 && !loading && (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No alerts match &quot;{search}&quot;.
+            </p>
+          )}
         </div>
       </div>
+
+      <Dialog open={openResetDialog} onOpenChange={setOpenResetDialog}>
+        <DialogContent showCloseButton={true}>
+          <DialogHeader>
+            <DialogTitle>Reset all changes</DialogTitle>
+            <DialogDescription>
+              This will reset all changes to the alerts. Unsaved
+              changes will be lost. Continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton={false}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenResetDialog(false)}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleResetChanges} size="sm">
+              Reset all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

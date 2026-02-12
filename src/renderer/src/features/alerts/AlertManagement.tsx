@@ -56,23 +56,31 @@ function isExpirationDurationInvalid(alert: NrAlert): boolean {
   return Number.isNaN(n) || n < 0
 }
 
+export type AlertChange =
+  | { type: 'modify'; index: number }
+  | { type: 'add'; index: number }
+  | { type: 'delete'; name: string }
+
 type AlertRowProps = {
   alert: NrAlert
   originalIndex: number
   updateAlert: (index: number, patch: Partial<NrAlert>) => void
   search: string
-  handleDeleteAlert: (index: number) => void
+  onRequestDelete: (index: number, name: string) => void
 }
 
 const AlertRow = memo(function AlertRow({
   alert,
   originalIndex,
   updateAlert,
-  handleDeleteAlert,
+  onRequestDelete,
 }: AlertRowProps) {
   return (
     <AccordionItem value={`alert-management-list-${originalIndex}`}>
-      <AccordionTrigger headerClassName="sticky top-0 z-10 bg-background data-[state=open]:border-b">
+      <AccordionTrigger
+        id={`alert-trigger-${originalIndex}`}
+        headerClassName="sticky top-0 z-10 bg-background data-[state=open]:border-b"
+      >
         <div className="flex gap-2 items-center">
           <div
             className={cn(
@@ -339,7 +347,7 @@ const AlertRow = memo(function AlertRow({
                   </InputGroup>
                 </Field>
               )}
-              <Button variant="destructive" size="sm" onClick={() => handleDeleteAlert(originalIndex)}>
+              <Button variant="destructive" size="sm" onClick={() => onRequestDelete(originalIndex, alert.name)}>
                 <LucideTrash2 />
                 <span>Delete alert</span>
               </Button>
@@ -352,7 +360,9 @@ const AlertRow = memo(function AlertRow({
 })
 
 const AlertManagement = () => {
-  const [changedAlerts, setChangedAlerts] = useState<Set<number>>(new Set())
+  const [changedAlerts, setChangedAlerts] = useState<AlertChange[]>([])
+  const [alertToDelete, setAlertToDelete] = useState<{ index: number; name: string } | null>(null)
+  const [openSaveSummaryDialog, setOpenSaveSummaryDialog] = useState(false)
   const { setFooter } = useFooter()
   const [selectedStack, setSelectedStack] = useState<string | undefined>(
     undefined
@@ -364,6 +374,22 @@ const AlertManagement = () => {
   alertsRef.current = alerts
   const [openResetDialog, setOpenResetDialog] = useState(false)
   const [search, setSearch] = useState('')
+  const [openAccordionValue, setOpenAccordionValue] = useState<string | undefined>(undefined)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!openAccordionValue) return
+    const index = openAccordionValue.replace('alert-management-list-', '')
+    const el = document.getElementById(`alert-trigger-${index}`)
+    if (el) {
+      const scrollParent = scrollContainerRef.current
+      if (scrollParent) {
+        requestAnimationFrame(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      }
+    }
+  }, [openAccordionValue])
 
   const filteredAlertsWithIndex = useMemo(
     () =>
@@ -389,7 +415,8 @@ const AlertManagement = () => {
     window.api.getNRAlertsForStack(selectedStack).then((result) => {
       setAlerts(result.alerts)
       setAlertsFilePath(result.filePath)
-      setChangedAlerts(new Set())
+      setChangedAlerts([])
+      setOpenAccordionValue(undefined)
       setLoading(false)
     }).catch(() => {
       setAlerts([])
@@ -397,21 +424,17 @@ const AlertManagement = () => {
     })
   }, [selectedStack])
 
-  const saveAlerts = useCallback(() => {
-    const current = alertsRef.current
-    if (!alertsFilePath) return
-    window.api.saveNRAlertsForStack(alertsFilePath, current).then(({ ok }) => {
-      if (ok) {
-        setChangedAlerts(new Set())
-      }
-    })
-  }, [alertsFilePath])
-
   const updateAlert = useCallback((index: number, patch: Partial<NrAlert>) => {
     setAlerts((prev) =>
       prev.map((a, i) => (i === index ? { ...a, ...patch } : a))
     )
-    setChangedAlerts((prev) => new Set(prev).add(index))
+    setChangedAlerts((prev) => {
+      const hasModifyOrAdd = prev.some(
+        (c) => (c.type === 'modify' || c.type === 'add') && c.index === index
+      )
+      if (hasModifyOrAdd) return prev
+      return [...prev, { type: 'modify', index }]
+    })
   }, [])
 
   const handleResetChanges = useCallback(() => {
@@ -423,7 +446,8 @@ const AlertManagement = () => {
     window.api.getNRAlertsForStack(selectedStack).then((result) => {
       setAlerts(result.alerts)
       setAlertsFilePath(result.filePath)
-      setChangedAlerts(new Set())
+      setChangedAlerts([])
+      setOpenAccordionValue(undefined)
       setOpenResetDialog(false)
       setLoading(false)
     }).catch(() => {
@@ -437,11 +461,12 @@ const AlertManagement = () => {
     setLoading(true)
     setAlerts([])
     setAlertsFilePath(null)
-    setChangedAlerts(new Set())
+    setChangedAlerts([])
     window.api.getNRAlertsForStack(selectedStack).then((result) => {
       setAlerts(result.alerts)
       setAlertsFilePath(result.filePath)
-      setChangedAlerts(new Set())
+      setChangedAlerts([])
+      setOpenAccordionValue(undefined)
     }).catch(() => {
       // keep current state on error
     }).finally(() => {
@@ -449,17 +474,52 @@ const AlertManagement = () => {
     })
   }, [selectedStack])
 
-  const handleDeleteAlert = useCallback((index: number) => {
+  const handleAddAlert = useCallback(() => {
+    const newIndex = alerts.length
+    const newAlert: NrAlert = {
+      name: `New Alert ${newIndex + 1}`,
+      description: '',
+      nrql_query: '',
+      runbook_url: '',
+      severity: 'CRITICAL',
+      enabled: true,
+      aggregation_method: 'CADENCE',
+      aggregation_window: 60,
+      aggregation_delay: 0,
+      critical_operator: 'ABOVE',
+      critical_threshold: 1,
+      critical_threshold_duration: 60,
+      critical_threshold_occurrences: 'ALL',
+      close_violations_on_expiration: false,
+      expiration_duration: undefined,
+      policy_id: undefined,
+    }
+    setAlerts((prev) => [...prev, newAlert])
+    setChangedAlerts((prev) => [...prev, { type: 'add', index: newIndex }])
+    setOpenAccordionValue(`alert-management-list-${newIndex}`)
+  }, [alerts.length])
+
+  const requestDeleteAlert = useCallback((index: number, name: string) => {
+    setAlertToDelete({ index, name })
+  }, [])
+
+  const confirmDeleteAlert = useCallback(() => {
+    if (!alertToDelete) return
+    const { index, name } = alertToDelete
     setAlerts((prev) => prev.filter((_, i) => i !== index))
     setChangedAlerts((prev) => {
-      const next = new Set<number>()
-      prev.forEach((i) => {
-        if (i < index) next.add(i)
-        else if (i > index) next.add(i - 1)
-      })
-      return next
+      const next: AlertChange[] = prev
+        .filter((c) => (c.type !== 'modify' && c.type !== 'add') || c.index !== index)
+        .map((c) => {
+          if (c.type === 'modify' || c.type === 'add') {
+            if (c.index > index) return { ...c, index: c.index - 1 }
+          }
+          return c
+        })
+      return [...next, { type: 'delete', name }]
     })
-  }, [])
+    setAlertToDelete(null)
+  }, [alertToDelete])
 
   const hasValidationError = alerts.some(
     (a) =>
@@ -470,25 +530,46 @@ const AlertManagement = () => {
       hasForbiddenChars(a.runbook_url)
   )
 
+  const saveSummaryLines = useMemo(() => {
+    return changedAlerts.map((c) => {
+      if (c.type === 'modify' || c.type === 'add') {
+        const name = alerts[c.index]?.name ?? 'Unknown'
+        return c.type === 'modify' ? `Modified: ${name}` : `Added: ${name}`
+      }
+      return `Deleted: ${c.name}`
+    })
+  }, [changedAlerts, alerts])
+
+  const performSave = useCallback(() => {
+    const current = alertsRef.current
+    if (!alertsFilePath) return
+    window.api.saveNRAlertsForStack(alertsFilePath, current).then(({ ok }) => {
+      if (ok) {
+        setChangedAlerts([])
+        setOpenSaveSummaryDialog(false)
+      }
+    })
+  }, [alertsFilePath])
+
   useEffect(() => {
     setFooter(
       <div className="flex gap-2">
         <ButtonGroup className='ml-auto'>
-          <Button onClick={() => setOpenResetDialog(true)} disabled={changedAlerts.size === 0} size="xs" variant="outline">
+          <Button onClick={() => setOpenResetDialog(true)} disabled={changedAlerts.length === 0} size="xs" variant="outline">
             <LucideUndo2 />
           </Button>
           <Button
-            onClick={saveAlerts}
-            disabled={!alertsFilePath || hasValidationError}
+            onClick={() => setOpenSaveSummaryDialog(true)}
+            disabled={!alertsFilePath || hasValidationError || changedAlerts.length === 0}
             size="xs"
           >
-            Save changes <span className="text-xs text-muted-foreground">+{changedAlerts.size}</span>
+            Save changes <span className="text-xs text-muted-foreground">+{changedAlerts.length}</span>
           </Button>
         </ButtonGroup>
       </div>
     )
     return () => setFooter(null)
-  }, [setFooter, alertsFilePath, hasValidationError, changedAlerts.size])
+  }, [setFooter, alertsFilePath, hasValidationError, changedAlerts.length])
 
 
   return (
@@ -500,11 +581,12 @@ const AlertManagement = () => {
           onSearch={setSearch}
           onRefetch={handleRefetch}
           refetchDisabled={!selectedStack}
+          onAddAlert={handleAddAlert}
         />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto" ref={scrollContainerRef}>
         <div className="flex flex-col gap-2">
-          <Accordion type="single" collapsible>
+          <Accordion type="single" collapsible value={openAccordionValue} onValueChange={setOpenAccordionValue}>
             {filteredAlertsWithIndex.map(({ alert, originalIndex }) => (
               <AlertRow
                 key={`alert-${originalIndex}`}
@@ -512,7 +594,7 @@ const AlertManagement = () => {
                 originalIndex={originalIndex}
                 updateAlert={updateAlert}
                 search={search}
-                handleDeleteAlert={handleDeleteAlert}
+                onRequestDelete={requestDeleteAlert}
               />
             ))}
           </Accordion>
@@ -554,6 +636,57 @@ const AlertManagement = () => {
             </Button>
             <Button onClick={handleResetChanges} size="sm">
               Reset all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!alertToDelete} onOpenChange={(open) => !open && setAlertToDelete(null)}>
+        <DialogContent showCloseButton={true}>
+          <DialogHeader>
+            <DialogTitle>Delete alert</DialogTitle>
+            <DialogDescription>
+              Delete alert &quot;{alertToDelete?.name}&quot;? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton={false}>
+            <Button
+              variant="outline"
+              onClick={() => setAlertToDelete(null)}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteAlert} size="sm">
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openSaveSummaryDialog} onOpenChange={setOpenSaveSummaryDialog}>
+        <DialogContent showCloseButton={true}>
+          <DialogHeader>
+            <DialogTitle>Save changes</DialogTitle>
+            <DialogDescription>
+              The following changes will be saved:
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="list-disc list-inside text-sm space-y-1 my-2">
+            {saveSummaryLines.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+          <DialogFooter showCloseButton={false}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenSaveSummaryDialog(false)}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button onClick={performSave} size="sm">
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

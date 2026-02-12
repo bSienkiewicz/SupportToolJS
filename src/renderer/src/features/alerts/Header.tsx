@@ -2,10 +2,10 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
-import { LucideRefreshCcw, LucideSearch } from 'lucide-react'
+import { LucidePlus, LucideRefreshCcw, LucideSearch } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 
-const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled }: { title: string, onChange: (value: string) => void, onSearch: (value: string) => void, onRefetch: () => void, refetchDisabled?: boolean }) => {
+const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled, onAddAlert }: { title: string, onChange: (value: string) => void, onSearch: (value: string) => void, onRefetch: () => void, refetchDisabled?: boolean, onAddAlert: () => void }) => {
     const [stacks, setStacks] = useState<string[]>([])
     const [selectedStack, setSelectedStack] = useState<string | undefined>(undefined)
     const [search, setSearch] = useState<string>('')
@@ -23,6 +23,10 @@ const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled }: 
 
     const handleRefetch = () => {
         onRefetch()
+    }
+
+    const handleAddAlert = () => {
+        onAddAlert()
     }
 
     useEffect(() => {
@@ -71,6 +75,9 @@ const AlertHeader = ({ title, onChange, onSearch, onRefetch, refetchDisabled }: 
                 </InputGroup>
                 <Button variant="outline" onClick={handleRefetch} disabled={refetchDisabled}>
                     <LucideRefreshCcw />
+                </Button>
+                <Button variant="outline" onClick={handleAddAlert} disabled={refetchDisabled}>
+                    <LucidePlus />
                 </Button>
             </div>
         </header>

@@ -61,11 +61,31 @@ export type AlertChange =
   | { type: 'add'; index: number }
   | { type: 'delete'; name: string }
 
+function newAlertTemplate(index: number): NrAlert {
+  return {
+    name: `New Alert ${index + 1}`,
+    description: '',
+    nrql_query: '',
+    runbook_url: '',
+    severity: 'CRITICAL',
+    enabled: true,
+    aggregation_method: 'CADENCE',
+    aggregation_window: 60,
+    aggregation_delay: 0,
+    critical_operator: 'ABOVE',
+    critical_threshold: 1,
+    critical_threshold_duration: 60,
+    critical_threshold_occurrences: 'ALL',
+    close_violations_on_expiration: false,
+    expiration_duration: undefined,
+    policy_id: undefined,
+  }
+}
+
 type AlertRowProps = {
   alert: NrAlert
   originalIndex: number
   updateAlert: (index: number, patch: Partial<NrAlert>) => void
-  search: string
   onRequestDelete: (index: number, name: string) => void
 }
 
@@ -375,20 +395,12 @@ const AlertManagement = () => {
   const [openResetDialog, setOpenResetDialog] = useState(false)
   const [search, setSearch] = useState('')
   const [openAccordionValue, setOpenAccordionValue] = useState<string | undefined>(undefined)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!openAccordionValue) return
     const index = openAccordionValue.replace('alert-management-list-', '')
     const el = document.getElementById(`alert-trigger-${index}`)
-    if (el) {
-      const scrollParent = scrollContainerRef.current
-      if (scrollParent) {
-        requestAnimationFrame(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        })
-      }
-    }
+    if (el) requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }, [openAccordionValue])
 
   const filteredAlertsWithIndex = useMemo(
@@ -402,27 +414,34 @@ const AlertManagement = () => {
   )
 
   useEffect(() => {
-    window.api.getConfigValue('selectedStack').then((value) => {
-      if (value) setSelectedStack(value)
-    })
+    window.api.getConfigValue('selectedStack').then((v) => v && setSelectedStack(v))
+  }, [])
+
+  const loadAlerts = useCallback((stack: string, options?: { clearFirst?: boolean; onDone?: () => void }) => {
+    setLoading(true)
+    if (options?.clearFirst) {
+      setAlerts([])
+      setAlertsFilePath(null)
+      setSearch('')
+    }
+    window.api.getNRAlertsForStack(stack)
+      .then((result) => {
+        setAlerts(result.alerts)
+        setAlertsFilePath(result.filePath)
+        setChangedAlerts([])
+        setOpenAccordionValue(undefined)
+        options?.onDone?.()
+      })
+      .catch(() => {
+        setAlerts([])
+        if (!options?.clearFirst) setAlertsFilePath(null)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    if (!selectedStack) return
-    setLoading(true)
-    setAlerts([])
-    setSearch('')
-    window.api.getNRAlertsForStack(selectedStack).then((result) => {
-      setAlerts(result.alerts)
-      setAlertsFilePath(result.filePath)
-      setChangedAlerts([])
-      setOpenAccordionValue(undefined)
-      setLoading(false)
-    }).catch(() => {
-      setAlerts([])
-      setLoading(false)
-    })
-  }, [selectedStack])
+    if (selectedStack) loadAlerts(selectedStack, { clearFirst: true })
+  }, [selectedStack, loadAlerts])
 
   const updateAlert = useCallback((index: number, patch: Partial<NrAlert>) => {
     setAlerts((prev) =>
@@ -438,63 +457,17 @@ const AlertManagement = () => {
   }, [])
 
   const handleResetChanges = useCallback(() => {
-    if (!selectedStack) {
-      setOpenResetDialog(false)
-      return
-    }
-    setLoading(true)
-    window.api.getNRAlertsForStack(selectedStack).then((result) => {
-      setAlerts(result.alerts)
-      setAlertsFilePath(result.filePath)
-      setChangedAlerts([])
-      setOpenAccordionValue(undefined)
-      setOpenResetDialog(false)
-      setLoading(false)
-    }).catch(() => {
-      setLoading(false)
-      setOpenResetDialog(false)
-    })
-  }, [selectedStack])
+    if (!selectedStack) return setOpenResetDialog(false)
+    loadAlerts(selectedStack, { onDone: () => setOpenResetDialog(false) })
+  }, [selectedStack, loadAlerts])
 
   const handleRefetch = useCallback(() => {
-    if (!selectedStack) return
-    setLoading(true)
-    setAlerts([])
-    setAlertsFilePath(null)
-    setChangedAlerts([])
-    window.api.getNRAlertsForStack(selectedStack).then((result) => {
-      setAlerts(result.alerts)
-      setAlertsFilePath(result.filePath)
-      setChangedAlerts([])
-      setOpenAccordionValue(undefined)
-    }).catch(() => {
-      // keep current state on error
-    }).finally(() => {
-      setLoading(false)
-    })
-  }, [selectedStack])
+    if (selectedStack) loadAlerts(selectedStack, { clearFirst: true })
+  }, [selectedStack, loadAlerts])
 
   const handleAddAlert = useCallback(() => {
     const newIndex = alerts.length
-    const newAlert: NrAlert = {
-      name: `New Alert ${newIndex + 1}`,
-      description: '',
-      nrql_query: '',
-      runbook_url: '',
-      severity: 'CRITICAL',
-      enabled: true,
-      aggregation_method: 'CADENCE',
-      aggregation_window: 60,
-      aggregation_delay: 0,
-      critical_operator: 'ABOVE',
-      critical_threshold: 1,
-      critical_threshold_duration: 60,
-      critical_threshold_occurrences: 'ALL',
-      close_violations_on_expiration: false,
-      expiration_duration: undefined,
-      policy_id: undefined,
-    }
-    setAlerts((prev) => [...prev, newAlert])
+    setAlerts((prev) => [...prev, newAlertTemplate(newIndex)])
     setChangedAlerts((prev) => [...prev, { type: 'add', index: newIndex }])
     setOpenAccordionValue(`alert-management-list-${newIndex}`)
   }, [alerts.length])
@@ -585,7 +558,7 @@ const AlertManagement = () => {
           onAddAlert={handleAddAlert}
         />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto" ref={scrollContainerRef}>
+      <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex flex-col gap-2">
           <Accordion type="single" collapsible value={openAccordionValue} onValueChange={setOpenAccordionValue}>
             {filteredAlertsWithIndex.map(({ alert, originalIndex }) => (
@@ -594,7 +567,6 @@ const AlertManagement = () => {
                 alert={alert}
                 originalIndex={originalIndex}
                 updateAlert={updateAlert}
-                search={search}
                 onRequestDelete={requestDeleteAlert}
               />
             ))}

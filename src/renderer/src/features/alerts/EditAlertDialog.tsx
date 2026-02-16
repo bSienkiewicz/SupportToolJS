@@ -13,6 +13,13 @@ import {
   stripForbiddenChars,
   hasForbiddenChars,
 } from './alertUtils'
+import {
+  PRINT_DURATION_SUFFIX,
+  buildThresholdStatsNrql,
+  parseThresholdStatsResults,
+  getPrintDurationProposedConfig,
+  calculateSuggestedThreshold,
+} from './alertAuditHelpers'
 import { Button } from '@renderer/components/ui/button'
 import {
   Field,
@@ -36,10 +43,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@renderer/components/ui/dialog'
-import { LucideSave, LucideTrash2 } from 'lucide-react'
+import { LucideSave, LucideTrash2, LucideCalculator } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '../../components/ui/switch'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../../components/ui/input-group'
+import { Spinner } from '../../components/ui/spinner'
 
 export type EditAlertDialogProps = {
   open: boolean
@@ -48,7 +56,11 @@ export type EditAlertDialogProps = {
   alertIndex: number
   onSave: (index: number, patch: NrAlert) => void
   onRequestDelete: (index: number, name: string) => void
+  /** Stack name for recalculating print duration threshold (e.g. from Alert Management). */
+  selectedStack?: string | null
 }
+
+const SAMPLING_DAYS = 7
 
 export function EditAlertDialog({
   open,
@@ -57,17 +69,26 @@ export function EditAlertDialog({
   alertIndex,
   onSave,
   onRequestDelete,
+  selectedStack: selectedStackProp,
 }: EditAlertDialogProps) {
   const [localAlert, setLocalAlert] = useState<NrAlert>(alert)
   const [showChangelog, setShowChangelog] = useState(false)
+  const [suggestedThreshold, setSuggestedThreshold] = useState<number | null>(null)
+  const [recalcLoading, setRecalcLoading] = useState(false)
   const originalSnapshotRef = useRef<NrAlert>(alert)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  const isPrintDurationAlert = localAlert.name.endsWith(PRINT_DURATION_SUFFIX)
+  const carrierName = isPrintDurationAlert
+    ? localAlert.name.slice(0, -PRINT_DURATION_SUFFIX.length)
+    : ''
 
   useEffect(() => {
     if (open) {
       setLocalAlert({ ...alert })
       originalSnapshotRef.current = { ...alert }
       setShowChangelog(false)
+      setSuggestedThreshold(null)
     }
   }, [open, alert])
 
@@ -110,6 +131,45 @@ export function EditAlertDialog({
   const handleCancelChangelog = useCallback(() => {
     setShowChangelog(false)
   }, [])
+
+  const handleRecalculateThreshold = useCallback(async () => {
+    const stack = selectedStackProp ?? await window.api.getConfigValue('selectedStack')
+    if (!stack?.trim()) {
+      toast.error('No stack selected')
+      return
+    }
+    setRecalcLoading(true)
+    setSuggestedThreshold(null)
+    try {
+      const nrql = buildThresholdStatsNrql([carrierName], SAMPLING_DAYS)
+      const result = await window.api.executeNrql(nrql)
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+      const data = Array.isArray(result.data) ? result.data : []
+      const statsList = parseThresholdStatsResults(data)
+      const stats = statsList.find((s) => s.carrierName === carrierName)
+      if (!stats) {
+        toast.info('No duration data found for this carrier')
+        return
+      }
+      const config = await getPrintDurationProposedConfig()
+      const suggested = calculateSuggestedThreshold(stats, config)
+      setSuggestedThreshold(suggested)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast.error(msg)
+    } finally {
+      setRecalcLoading(false)
+    }
+  }, [carrierName, selectedStackProp])
+
+  const handleApplySuggestedThreshold = useCallback(() => {
+    if (suggestedThreshold == null) return
+    updateLocal({ critical_threshold: suggestedThreshold })
+    setSuggestedThreshold(null)
+  }, [suggestedThreshold, updateLocal])
 
   const handleDelete = useCallback(() => {
     onOpenChange(false)
@@ -282,14 +342,56 @@ export function EditAlertDialog({
                 </Select>
               </Field>
               <Field>
-                <FieldLabel>Critical Threshold</FieldLabel>
-                <Input
-                  type="number"
-                  value={localAlert.critical_threshold}
-                  onChange={(e) =>
-                    updateLocal({ critical_threshold: Number(e.target.value) })
-                  }
-                />
+                <div className="flex items-center justify-between">
+                  <FieldLabel>Critical Threshold</FieldLabel>
+                  {isPrintDurationAlert && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRecalculateThreshold}
+                      disabled={recalcLoading}
+                    >
+                      {recalcLoading ? (
+                        <>
+                          <Spinner className="mr-1 size-4" />
+                          Recalculating…
+                        </>
+                      ) : (
+                        <>
+                          <LucideCalculator className="mr-1 size-4" />
+                          Recalculate
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-wrap flex-col gap-2">
+                  {isPrintDurationAlert && (
+                    <>
+                      {suggestedThreshold != null && (
+                        <span className="flex items-center gap-1.5 text-sm w-full bg-muted p-2 rounded-md">
+                          <span className="text-muted-foreground">Suggested:</span>
+                          <span className="tabular-nums font-medium">{suggestedThreshold}</span>
+                          <Button
+                            type="button"
+                            size="xs"
+                            onClick={handleApplySuggestedThreshold}
+                          >
+                            Apply
+                          </Button>
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <Input
+                    type="number"
+                    value={localAlert.critical_threshold}
+                    onChange={(e) =>
+                      updateLocal({ critical_threshold: Number(e.target.value) })
+                    }
+                  />
+                </div>
               </Field>
               <Field>
                 <FieldLabel>Critical Threshold Duration</FieldLabel>

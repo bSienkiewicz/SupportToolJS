@@ -202,6 +202,7 @@ const AlertManagement = () => {
           alertIndex={editingAlertIndex}
           onSave={saveAlertFromDialog}
           onRequestDelete={requestDeleteAlert}
+          selectedStack={selectedStack}
         />
       )}
 

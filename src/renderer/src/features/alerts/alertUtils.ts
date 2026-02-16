@@ -2,6 +2,28 @@ import type { NrAlert } from '../../../../types/alerts'
 
 const FORBIDDEN_CHARS_REGEX = /[\[\]{}]/g
 
+/** Detected alert type for threshold display: print duration (seconds) or error rate (%). */
+export type AlertDisplayType = 'print_duration' | 'error_rate'
+
+/**
+ * Classify alert for threshold badge: print duration (threshold in s) or error rate (threshold in %).
+ * Returns null if type cannot be determined.
+ */
+export function getAlertType(alert: NrAlert): AlertDisplayType | null {
+  const name = String(alert.name ?? '').toLowerCase()
+  const nrql = String(alert.nrql_query ?? '').toLowerCase()
+
+  const looksLikeErrorRate =
+    name.includes('increased error rate')
+
+  const looksLikePrintDuration =
+    name.includes('increased printparcel duration')
+
+  if (looksLikeErrorRate && !looksLikePrintDuration) return 'error_rate'
+  if (looksLikePrintDuration && !looksLikeErrorRate) return 'print_duration'
+  return null
+}
+
 export function stripForbiddenChars(s: string): string {
   return s.replace(FORBIDDEN_CHARS_REGEX, '')
 }

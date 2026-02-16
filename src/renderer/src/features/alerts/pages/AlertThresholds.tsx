@@ -1,5 +1,5 @@
 import React from 'react'
-import AlertHeader from './Header'
+import AlertHeader from '../Header'
 
 const AlertThresholds = () => {
   return (

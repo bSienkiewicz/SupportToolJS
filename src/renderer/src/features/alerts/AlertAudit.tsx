@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, memo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AlertHeader from './Header'
 import type { GetNRAlertsForStackResult } from '@/types/api'
 import { Button } from '@renderer/components/ui/button'
@@ -8,77 +8,39 @@ import { toast } from 'sonner'
 import {
     Table,
     TableBody,
-    TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@renderer/components/ui/table'
 import { Checkbox } from '../../components/ui/checkbox'
 import { useFooter } from '@renderer/context/FooterContext'
+import CarrierRow from './CarrierRow'
+import {
+    NRQL_TEMPLATE,
+    extractCarrierNames,
+    computeAlertPresence,
+    type Presence,
+    addMissingAlerts,
+} from './alertAuditHelpers'
 
-const NRQL_TEMPLATE = (stack: string) =>
-    `SELECT uniques(CarrierName) FROM Transaction WHERE host LIKE '%-${stack}-%' and PrintOperation LIKE '%create%' SINCE 7 days ago`
-
-/** Response shape: results[0]["uniques.CarrierName"] = string[] */
-const CARRIERS_KEY = 'uniques.CarrierName'
-
-/** Required alert name suffixes we check for each carrier (e.g. "DHL Express - Increased Error Rate"). */
-const ALERT_SUFFIXES = {
-    errorRate: ' - Increased Error Rate',
-    printDuration: ' - Increased PrintParcel Duration',
-} as const
-
-function extractCarrierNames(results: unknown[]): string[] {
-    const first = results[0]
-    if (!first || typeof first !== 'object') return []
-    const raw = (first as Record<string, unknown>)[CARRIERS_KEY]
-    if (!Array.isArray(raw)) return []
-    return raw.map(String).filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-}
-
-type Presence = { errorRate: boolean; printDuration: boolean }
-
-const CarrierRow = memo(({
-    name,
-    presence,
-    checked,
-    onToggle,
-}: {
-    name: string
-    presence: Presence
-    checked: boolean
-    onToggle: (name: string, checked: boolean) => void
-}) => (
-    <TableRow>
-        <TableCell>
-            <Checkbox
-                checked={checked}
-                onCheckedChange={(c) => onToggle(name, c === true)}
-                aria-label={`Select ${name}`}
-            />
-        </TableCell>
-        <TableCell>{name}</TableCell>
-        <TableCell>
-            <Checkbox disabled checked={presence.printDuration} aria-label={`Print duration alert for ${name}`} />
-        </TableCell>
-        <TableCell>
-            <Checkbox disabled checked={presence.errorRate} aria-label={`Error rate alert for ${name}`} />
-        </TableCell>
-    </TableRow>
-))
-CarrierRow.displayName = 'CarrierRow'
+const DEFAULT_PRESENCE: Presence = { name: '', errorRate: false, printDuration: false }
 
 const AlertAudit = () => {
     const { setFooter } = useFooter()
     const [selectedStack, setSelectedStack] = useState<string | null>(null)
     const [carrierNames, setCarrierNames] = useState<string[]>([])
-    const [alertPresence, setAlertPresence] = useState<Array<{ errorRate: boolean; printDuration: boolean }>>([])
+    const [alertPresence, setAlertPresence] = useState<Presence[]>([])
     const [selectedCarriers, setSelectedCarriers] = useState<Set<string>>(new Set())
     const [loading, setLoading] = useState(false)
+    const [addLoading, setAddLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const skipNextFetchRef = useRef(false)
 
     useEffect(() => {
-        window.api.getConfigValue('selectedStack').then((v) => setSelectedStack(v ?? null))
+        window.api.getConfigValue('selectedStack').then((v) => {
+            skipNextFetchRef.current = true
+            setSelectedStack(v ?? null)
+        })
     }, [])
 
     const fetchData = useCallback(async () => {
@@ -108,9 +70,10 @@ const AlertAudit = () => {
 
             if (names.length === 0) {
                 toast.info('No carriers found', { id: toastId })
-                setAlertPresence([])
             } else {
-                toast.success(`${names.length} carrier${names.length !== 1 ? 's' : ''} loaded`, { id: toastId })
+                toast.success(`${names.length} carrier${names.length !== 1 ? 's' : ''} loaded`, {
+                    id: toastId,
+                })
                 await calculateMissingAlerts(selectedStack.trim(), names)
             }
         } catch (e) {
@@ -123,33 +86,31 @@ const AlertAudit = () => {
     }, [selectedStack])
 
     useEffect(() => {
-        if (selectedStack?.trim()) fetchData()
+        if (!selectedStack?.trim()) return
+        if (skipNextFetchRef.current) {
+            skipNextFetchRef.current = false
+            return
+        }
+        fetchData()
     }, [selectedStack, fetchData])
 
     async function calculateMissingAlerts(stack: string, carriers: string[]) {
         const result: GetNRAlertsForStackResult = await window.api.getNRAlertsForStack(stack)
-        if (result.error) {
-            toast.error(result.error)
-            setAlertPresence(carriers.map(() => ({ errorRate: false, printDuration: false })))
-            setSelectedCarriers(new Set())
+        const computed = computeAlertPresence(result, carriers)
+        if (!computed) {
+            toast.error(result.error ?? 'Failed to load alerts')
+            setAlertPresence(carriers.map((name) => ({ ...DEFAULT_PRESENCE, name })))
+            setSelectedCarriers(new Set(carriers))
             return
         }
-        const existingCarrierAlerts = new Set(result.alerts.map((a) => a.name))
-        const presence = carriers.map((carrier) => ({
-            errorRate: existingCarrierAlerts.has(`${carrier}${ALERT_SUFFIXES.errorRate}`),
-            printDuration: existingCarrierAlerts.has(`${carrier}${ALERT_SUFFIXES.printDuration}`),
-        }))
-        setAlertPresence(presence)
-        const missing = new Set(
-            carriers.filter((_, i) => !(presence[i].errorRate && presence[i].printDuration))
-        )
-        setSelectedCarriers(missing)
+        setAlertPresence(computed.presence)
+        setSelectedCarriers(new Set(computed.missingCarriers))
     }
 
     const presenceByName = useMemo(() => {
-        const m: Record<string, { errorRate: boolean; printDuration: boolean }> = {}
+        const m: Record<string, Presence> = {}
         carrierNames.forEach((name, i) => {
-            m[name] = alertPresence[i] ?? { errorRate: false, printDuration: false }
+            m[name] = alertPresence[i] ?? DEFAULT_PRESENCE
         })
         return m
     }, [carrierNames, alertPresence])
@@ -177,11 +138,34 @@ const AlertAudit = () => {
         })
     }, [sortedCarriers])
 
+    const handleAddMissingAlerts = useCallback(async () => {
+        if (!selectedStack?.trim() || carrierNames.length === 0) return
+        setAddLoading(true)
+        try {
+            const { addedNames, saved } = await addMissingAlerts(selectedStack, selectedCarriers, alertPresence)
+            if (!saved) return
+            if (addedNames.length > 0) {
+                toast.success(`Added ${addedNames.length} alert${addedNames.length !== 1 ? 's' : ''}`)
+                await calculateMissingAlerts(selectedStack.trim(), carrierNames)
+            } else {
+                toast.info('No new alerts to add')
+            }
+        } finally {
+            setAddLoading(false)
+        }
+    }, [selectedStack, selectedCarriers, alertPresence, carrierNames])
+
+    const selectAllChecked =
+        sortedCarriers.length === 0
+            ? false
+            : selectedCarriers.size === sortedCarriers.length
+                ? true
+                : selectedCarriers.size > 0
+                    ? ('indeterminate' as const)
+                    : false
+
     useEffect(() => {
-        setFooter(
-            <div className="flex gap-2">
-            </div>
-        )
+        setFooter(<div className="flex gap-2" />)
         return () => setFooter(null)
     }, [setFooter, fetchData, loading])
 
@@ -191,13 +175,15 @@ const AlertAudit = () => {
                 title="Find Missing Alerts"
                 showItems={[]}
                 onChange={setSelectedStack}
-                onSearch={() => { }}
-                onRefetch={() => { }}
-                onAddAlert={() => { }}
+                onSearch={() => {}}
+                onRefetch={fetchData}
+                onAddAlert={handleAddMissingAlerts}
             />
             <div className="min-h-0 flex-1 overflow-auto">
                 {!selectedStack && (
-                    <p className="text-sm text-muted-foreground">Select a stack above, then click Fetch Data.</p>
+                    <p className="text-sm text-muted-foreground">
+                        Select a stack above, then click Fetch Data.
+                    </p>
                 )}
                 {error && (
                     <p className="text-sm text-destructive" role="alert">
@@ -205,7 +191,7 @@ const AlertAudit = () => {
                     </p>
                 )}
                 <div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
                         <ButtonGroup>
                             <Button onClick={fetchData} disabled={loading} size="xs">
                                 {loading ? (
@@ -218,10 +204,27 @@ const AlertAudit = () => {
                                 )}
                             </Button>
                         </ButtonGroup>
-                        <p className="text-xs text-muted-foreground my-3">
+                        <ButtonGroup>
+                            <Button
+                                onClick={() => handleAddMissingAlerts()}
+                                size="xs"
+                                disabled={selectedCarriers.size === 0 || !selectedStack || addLoading}
+                            >
+                                {addLoading ? (
+                                    <>
+                                        <Spinner className="mr-2 size-4" />
+                                        Adding…
+                                    </>
+                                ) : (
+                                    'Add Missing Alerts'
+                                )}
+                            </Button>
+                        </ButtonGroup>
+                        <p className="text-xs text-muted-foreground my-3 ml-auto">
                             {carrierNames.length} carrier{carrierNames.length !== 1 ? 's' : ''}
                         </p>
                     </div>
+
                     {carrierNames.length > 0 && (
                         <div className="rounded-md border overflow-hidden">
                             <Table>
@@ -229,15 +232,7 @@ const AlertAudit = () => {
                                     <TableRow>
                                         <TableHead className="w-10">
                                             <Checkbox
-                                                checked={
-                                                    sortedCarriers.length === 0
-                                                        ? false
-                                                        : selectedCarriers.size === sortedCarriers.length
-                                                            ? true
-                                                            : selectedCarriers.size > 0
-                                                                ? 'indeterminate'
-                                                                : false
-                                                }
+                                                checked={selectAllChecked}
                                                 onCheckedChange={(c) => toggleCarrierSelection(null, c === true)}
                                                 aria-label="Select all carriers"
                                             />
@@ -252,7 +247,7 @@ const AlertAudit = () => {
                                         <CarrierRow
                                             key={name}
                                             name={name}
-                                            presence={presenceByName[name] ?? { errorRate: false, printDuration: false }}
+                                            presence={presenceByName[name] ?? { ...DEFAULT_PRESENCE, name }}
                                             checked={selectedCarriers.has(name)}
                                             onToggle={toggleCarrierSelection}
                                         />

@@ -7,6 +7,7 @@ import AlertManagement from './features/alerts/AlertManagement'
 import AlertThresholds from './features/alerts/AlertThresholds'
 import { FooterProvider, FooterSlot } from './context/FooterContext'
 import AlertAudit from './features/alerts/AlertAudit'
+import { TooltipProvider } from './components/ui/tooltip'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)
@@ -28,21 +29,23 @@ function App(): React.JSX.Element {
   }
 
   return (
-    <FooterProvider>
-      <div className="flex flex-col h-screen">
-        <div className="titlebar"></div>
-        <Navigation currentPage={page} onPageChange={onPageChange} />
-        <main className="min-h-0 flex-1 overflow-y-auto px-3">
-          {page === ROUTES.SETTINGS && <SettingsPage />}
-          {page === ROUTES.ALERTS && <div className="p-6">Alerts</div>}
-          {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
-          {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
-          {page === ROUTES.ALERTS_THRESHOLDS && <AlertThresholds />}
-          <Toaster />
-        </main>
-        <FooterSlot />
-      </div>
-    </FooterProvider>
+    <TooltipProvider>
+      <FooterProvider>
+        <div className="flex flex-col h-screen">
+          <div className="titlebar"></div>
+          <Navigation currentPage={page} onPageChange={onPageChange} />
+          <main className="min-h-0 flex-1 overflow-y-auto px-3">
+            {page === ROUTES.SETTINGS && <SettingsPage />}
+            {page === ROUTES.ALERTS && <div className="p-6">Alerts</div>}
+            {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
+            {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
+            {page === ROUTES.ALERTS_THRESHOLDS && <AlertThresholds />}
+            <Toaster />
+          </main>
+          <FooterSlot />
+        </div>
+      </FooterProvider>
+    </TooltipProvider>
   )
 }
 

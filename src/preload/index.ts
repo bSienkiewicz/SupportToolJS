@@ -11,8 +11,8 @@ const api = {
   getNRStacks: () => ipcRenderer.invoke('app:getNRStacks') as Promise<string[]>,
   getNRAlertsForStack: (stack: string) =>
     ipcRenderer.invoke('app:getNRAlertsForStack', stack) as Promise<GetNRAlertsForStackResult>,
-  saveNRAlertsForStack: (filePath: string, alerts: NrAlert[]) =>
-    ipcRenderer.invoke('app:saveNRAlertsForStack', filePath, alerts) as Promise<SaveNRAlertsForStackResult>,
+  saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) =>
+    ipcRenderer.invoke('app:saveNRAlertsForStack', stack, alerts) as Promise<SaveNRAlertsForStackResult>,
   executeNrql: (nrqlQuery: string) =>
     ipcRenderer.invoke('app:executeNrql', nrqlQuery) as Promise<ExecuteNrqlResult>,
 }

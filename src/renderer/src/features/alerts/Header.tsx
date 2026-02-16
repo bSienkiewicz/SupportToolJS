@@ -31,8 +31,12 @@ const AlertHeader = ({ title, showItems, onChange, onSearch, onRefetch, refetchD
 
     useEffect(() => {
         window.api.getConfigValue('selectedStack').then((value) => {
-            if (value) setSelectedStack(value)
+            if (value) {
+                setSelectedStack(value)
+                onChange(value)
+            }
         })
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- sync initial config to parent once
     }, [])
 
     useEffect(() => {

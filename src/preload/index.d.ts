@@ -16,7 +16,7 @@ export interface AppAPI {
   setConfigValue: (key: string, value: string) => Promise<void>
   getNRStacks: () => Promise<string[]>
   getNRAlertsForStack: (stack: string) => Promise<GetNRAlertsForStackResult>
-  saveNRAlertsForStack: (filePath: string, alerts: NrAlert[]) => Promise<SaveNRAlertsForStackResult>
+  saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) => Promise<SaveNRAlertsForStackResult>
   executeNrql: (nrqlQuery: string) => Promise<ExecuteNrqlResult>
 }
 

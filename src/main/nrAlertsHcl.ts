@@ -48,13 +48,17 @@ function findMatchingBracket(
   return depth === 0 ? i - 1 : -1
 }
 
-/** Locate nr_nrql_alerts = [ ... ] and return range (for replace on save). */
+/** Pattern for nr_nrql_alerts block (allows optional spaces around =). */
+const BLOCK_START_PATTERN = /nr_nrql_alerts\s*=\s*\[/
+
+/** Locate nr_nrql_alerts = [ ... ] (or nr_nrql_alerts=[) and return range (for replace on save). */
 export function getBlockRange(
   content: string
 ): { start: number; end: number } | null {
-  const blockStartIndex = content.indexOf(BLOCK_START)
-  if (blockStartIndex === -1) return null
-  const openAt = blockStartIndex + BLOCK_START.length - 1
+  const match = content.match(BLOCK_START_PATTERN)
+  if (!match || match.index === undefined) return null
+  const blockStartIndex = match.index
+  const openAt = blockStartIndex + match[0].length - 1
   const closeAt = findMatchingBracket(content, openAt, '[', ']')
   if (closeAt === -1) return null
   return { start: blockStartIndex, end: closeAt + 1 }
@@ -67,7 +71,8 @@ export function getBlockRange(
 function parseBlockInChunks(content: string): NrAlert[] | null {
   const range = getBlockRange(content)
   if (!range) return null
-  const innerStart = range.start + BLOCK_START.length
+  const bracketStart = content.indexOf('[', range.start)
+  const innerStart = bracketStart === -1 ? range.start + BLOCK_START.length : bracketStart + 1
   const innerEnd = range.end - 1
   const inner = content.slice(innerStart, innerEnd)
   const alerts: NrAlert[] = []
@@ -78,7 +83,7 @@ function parseBlockInChunks(content: string): NrAlert[] | null {
     const closeIdx = findMatchingBracket(inner, openIdx, '{', '}')
     if (closeIdx === -1) break
     const objSlice = inner.slice(openIdx, closeIdx + 1)
-    const chunk = `${BLOCK_START}${objSlice} ]`
+    const chunk = `nr_nrql_alerts = [${objSlice} ]`
     try {
       const parsed = hcl.parseToObject(chunk)
       const raw = getAlertsRaw(parsed)

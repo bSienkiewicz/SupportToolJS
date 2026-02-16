@@ -35,10 +35,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@renderer/components/ui/dialog'
-import { LucideTrash2, LucideUndo2 } from 'lucide-react'
+import { LucideSave, LucideTrash2, LucideUndo2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Spinner } from '../../components/ui/spinner'
 import { Switch } from '../../components/ui/switch'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../../components/ui/input-group'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip'
 
 const FORBIDDEN_CHARS_REGEX = /[\[\]{}]/g
 function stripForbiddenChars(s: string): string {
@@ -389,7 +391,6 @@ const AlertManagement = () => {
   )
   const [loading, setLoading] = useState(false)
   const [alerts, setAlerts] = useState<NrAlert[]>([])
-  const [alertsFilePath, setAlertsFilePath] = useState<string | null>(null)
   const alertsRef = useRef(alerts)
   alertsRef.current = alerts
   const [openResetDialog, setOpenResetDialog] = useState(false)
@@ -421,20 +422,17 @@ const AlertManagement = () => {
     setLoading(true)
     if (options?.clearFirst) {
       setAlerts([])
-      setAlertsFilePath(null)
       setSearch('')
     }
     window.api.getNRAlertsForStack(stack)
       .then((result) => {
         setAlerts(result.alerts)
-        setAlertsFilePath(result.filePath)
         setChangedAlerts([])
         setOpenAccordionValue(undefined)
         options?.onDone?.()
       })
       .catch(() => {
         setAlerts([])
-        if (!options?.clearFirst) setAlertsFilePath(null)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -494,14 +492,18 @@ const AlertManagement = () => {
     setAlertToDelete(null)
   }, [alertToDelete])
 
-  const hasValidationError = alerts.some(
-    (a) =>
+  function isAlertInvalid(a: NrAlert): boolean {
+    return (
       isExpirationDurationInvalid(a) ||
       hasForbiddenChars(a.name) ||
       hasForbiddenChars(a.description) ||
       hasForbiddenChars(a.nrql_query) ||
       hasForbiddenChars(a.runbook_url)
-  )
+    )
+  }
+
+  const hasValidationError = alerts.some(isAlertInvalid)
+  const firstInvalidAlertName = alerts.find((a) => isAlertInvalid(a))?.name ?? null
 
   const saveSummaryLines = useMemo(() => {
     return changedAlerts.map((c) => {
@@ -515,14 +517,27 @@ const AlertManagement = () => {
 
   const performSave = useCallback(() => {
     const current = alertsRef.current
-    if (!alertsFilePath) return
-    window.api.saveNRAlertsForStack(alertsFilePath, current).then(({ ok }) => {
+    if (!selectedStack || hasValidationError) return
+    window.api.saveNRAlertsForStack(selectedStack, current).then(({ ok, error }) => {
       if (ok) {
         setChangedAlerts([])
         setOpenSaveSummaryDialog(false)
+        toast.success('Alerts saved successfully')
+      } else {
+        const msg =
+          error === 'block_not_found'
+            ? 'nr_nrql_alerts block not found in auto.tfvars'
+            : error === 'file_not_found'
+              ? 'Stack auto.tfvars file not found'
+              : error === 'no_data_dir'
+                ? 'Data directory not configured'
+                : error === 'write_failed'
+                  ? 'Could not write to file'
+                  : 'Failed to save alerts'
+        toast.error(msg)
       }
     })
-  }, [alertsFilePath])
+  }, [selectedStack, hasValidationError])
 
   useEffect(() => {
     setFooter(
@@ -531,18 +546,32 @@ const AlertManagement = () => {
           <Button onClick={() => setOpenResetDialog(true)} disabled={changedAlerts.length === 0} size="xs" variant="outline">
             <LucideUndo2 />
           </Button>
-          <Button
-            onClick={() => setOpenSaveSummaryDialog(true)}
-            disabled={!alertsFilePath || hasValidationError || changedAlerts.length === 0}
-            size="xs"
-          >
-            Save changes <span className="text-xs text-muted-foreground">+{changedAlerts.length}</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => {
+                  if (!hasValidationError) setOpenSaveSummaryDialog(true)
+                }}
+                // disabled={!selectedStack || changedAlerts.length === 0}
+                variant={hasValidationError ? 'destructive' : 'default'}
+                size="xs"
+                className="transition-all duration-500 ease-in-out"
+              >
+                <LucideSave />
+                Save changes <span className={`text-xs ${hasValidationError ? 'text-white' : 'text-muted-foreground'}`}>+{changedAlerts.length}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {hasValidationError && firstInvalidAlertName
+                ? `Validation error - "${firstInvalidAlertName}"`
+                : 'Save changes to the alerts'}
+            </TooltipContent>
+          </Tooltip>
         </ButtonGroup>
       </div>
     )
     return () => setFooter(null)
-  }, [setFooter, alertsFilePath, hasValidationError, changedAlerts.length])
+  }, [setFooter, selectedStack, hasValidationError, changedAlerts.length, firstInvalidAlertName])
 
 
   return (

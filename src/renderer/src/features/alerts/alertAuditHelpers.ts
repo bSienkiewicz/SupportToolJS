@@ -14,7 +14,13 @@ export const ALERT_SUFFIXES = {
   printDuration: ' - Increased PrintParcel Duration',
 } as const
 
-export type Presence = { name: string; errorRate: boolean; printDuration: boolean }
+export type Presence = {
+  name: string
+  errorRate: boolean
+  printDuration: boolean
+  /** When print duration alert is configured, its critical_threshold value */
+  printDurationThreshold?: number
+}
 
 /** Parse carrier names from executeNrql result shape. */
 export function extractCarrierNames(results: unknown[]): string[] {
@@ -37,12 +43,21 @@ export function computeAlertPresence(
   carriers: string[]
 ): { presence: Presence[]; missingCarriers: string[] } | null {
   if (result.error) return null
-  const existingNames = new Set(result.alerts.map((a) => a.name))
-  const presence: Presence[] = carriers.map((carrier) => ({
-    name: carrier,
-    errorRate: existingNames.has(`${carrier}${ALERT_SUFFIXES.errorRate}`),
-    printDuration: existingNames.has(`${carrier}${ALERT_SUFFIXES.printDuration}`),
-  }))
+  const alertByName = new Map(result.alerts.map((a) => [a.name, a]))
+  const presence: Presence[] = carriers.map((carrier) => {
+    const printDurationAlertName = `${carrier}${ALERT_SUFFIXES.printDuration}`
+    const printDurationAlert = alertByName.get(printDurationAlertName)
+    const hasPrintDuration = !!printDurationAlert
+    return {
+      name: carrier,
+      errorRate: alertByName.has(`${carrier}${ALERT_SUFFIXES.errorRate}`),
+      printDuration: hasPrintDuration,
+      ...(hasPrintDuration &&
+        printDurationAlert.critical_threshold != null && {
+          printDurationThreshold: printDurationAlert.critical_threshold,
+        }),
+    }
+  })
   const missingCarriers = carriers.filter(
     (_, i) => !(presence[i].errorRate && presence[i].printDuration)
   )

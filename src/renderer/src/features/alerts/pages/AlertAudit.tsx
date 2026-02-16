@@ -240,6 +240,7 @@ const AlertAudit = () => {
                     <TableHead>Carrier Name</TableHead>
                     <TableHead>Print Duration</TableHead>
                     <TableHead>Error Rate</TableHead>
+                    <TableHead><Button size="xs" variant="default">Calculate thresholds</Button></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

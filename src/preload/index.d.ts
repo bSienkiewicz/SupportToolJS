@@ -1,6 +1,12 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import type { ElectronAPI } from '@electron-toolkit/preload'
+import type {
+  NrAlert,
+  GetNRAlertsForStackResult,
+  SaveNRAlertsForStackResult,
+  ExecuteNrqlResult,
+} from '@/types/api'
 
-export type NrAlert = Record<string, string | number | boolean>
+export type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, ExecuteNrqlResult }
 
 export interface AppAPI {
   getDataDir: () => Promise<string | null>
@@ -9,15 +15,9 @@ export interface AppAPI {
   getConfigValue: (key: string) => Promise<string | null>
   setConfigValue: (key: string, value: string) => Promise<void>
   getNRStacks: () => Promise<string[]>
-  getNRAlertsForStack: (stack: string) => Promise<{
-    alerts: NrAlert[]
-    filePath: string | null
-    error: 'no_data_dir' | 'file_not_found' | 'parse_failed' | null
-  }>
-  saveNRAlertsForStack: (
-    filePath: string,
-    alerts: NrAlert[]
-  ) => Promise<{ ok: boolean }>
+  getNRAlertsForStack: (stack: string) => Promise<GetNRAlertsForStackResult>
+  saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) => Promise<SaveNRAlertsForStackResult>
+  executeNrql: (nrqlQuery: string) => Promise<ExecuteNrqlResult>
 }
 
 declare global {

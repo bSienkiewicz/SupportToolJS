@@ -3,6 +3,13 @@ import { Button } from './components/ui/button'
 import { Input } from './components/ui/input'
 import { toast } from 'sonner'
 
+const API_KEY_PREFIX = 'NRAK-'
+const API_KEY_LENGTH = 32
+
+function isValidApiKey(key: string): boolean {
+  return key.startsWith(API_KEY_PREFIX) && key.length === API_KEY_LENGTH
+}
+
 const SettingsPage = () => {
     const [dataDir, setDataDir] = useState<string | null>(null)
     const [apiKey, setApiKey] = useState('')
@@ -31,6 +38,11 @@ const SettingsPage = () => {
     const handleApiKeyBlur = (e: React.FocusEvent<HTMLInputElement>): void => {
         const apiKeyInput = e.target.value.trim()
         setApiKey(apiKeyInput)
+        if (!apiKeyInput) return
+        if (!isValidApiKey(apiKeyInput)) {
+            toast.error(`Invalid API key`)
+            return
+        }
         window.api.getConfigValue('apiKey').then((prev) => {
             if (prev !== apiKeyInput) {
                 void window.api.setConfigValue('apiKey', apiKeyInput)
@@ -54,13 +66,17 @@ const SettingsPage = () => {
                 <div className="flex gap-2 flex-wrap">
                     <Input
                         type="text"
-                        placeholder="API key"
+                        placeholder="NRAK-..."
                         value={apiKey}
                         onBlur={handleApiKeyBlur}
                         onChange={handleApiKeyChange}
-                        className="border rounded px-2 py-1.5 text-sm w-64"
+                        className="border rounded px-2 py-1.5 text-sm w-full"
+                        aria-invalid={apiKey.length > 0 && !isValidApiKey(apiKey)}
                     />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                    Must start with NRAK- and be {API_KEY_LENGTH} characters long.
+                </p>
             </section>
         </div>
     )

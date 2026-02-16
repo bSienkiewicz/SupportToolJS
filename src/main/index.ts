@@ -16,7 +16,13 @@ import {
   getBlockRange,
   type NrAlert,
 } from './nrAlertsHcl'
-
+import {
+  getApiKey,
+  buildNrqlGraphQLQuery,
+  executeGraphQLQuery,
+  extractResultsArray,
+  type NrqlResponse,
+} from './newRelicHelper'
 const APP_DATA_FILE = 'app-data.json'
 
 interface AppData {
@@ -148,36 +154,66 @@ app.whenReady().then(() => {
       .map((d) => d.name)
   })
 
-  // Get NR alerts for stack (hcl2-parser only; returns alerts + filePath for save)
+  // Get NR alerts for stack (hcl2-parser only)
   ipcMain.handle('app:getNRAlertsForStack', (_e, stack: string) => {
     const dataDir = readAppData().dataDir
     if (!dataDir)
-      return { alerts: [], filePath: null, error: 'no_data_dir' as const }
+      return { alerts: [], error: 'no_data_dir' as const }
     const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
     if (!existsSync(filePath))
-      return { alerts: [], filePath: null, error: 'file_not_found' as const }
+      return { alerts: [], error: 'file_not_found' as const }
     const content = readFileSync(filePath, 'utf-8')
     const parsed = parseNrNrqlAlerts(content)
     if (!parsed)
-      return { alerts: [], filePath, error: 'parse_failed' as const }
-    return { alerts: parsed.alerts, filePath, error: null }
+      return { alerts: [], error: 'parse_failed' as const }
+    return { alerts: parsed.alerts, error: null }
   })
 
   ipcMain.handle(
     'app:saveNRAlertsForStack',
-    (_e, filePath: string, alerts: NrAlert[]) => {
-      if (!filePath || !existsSync(filePath)) return { ok: false }
-      const content = readFileSync(filePath, 'utf-8')
+    (_e, stack: string, alerts: NrAlert[]) => {
+      const dataDir = readAppData().dataDir
+      if (!dataDir) return { ok: false, error: 'no_data_dir' as const }
+      const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
+      if (!existsSync(filePath)) return { ok: false, error: 'file_not_found' as const }
+      let content: string
+      try {
+        content = readFileSync(filePath, 'utf-8')
+      } catch (err) {
+        return { ok: false, error: 'file_not_found' as const }
+      }
       const range = getBlockRange(content)
-      if (!range) return { ok: false }
+      if (!range) return { ok: false, error: 'block_not_found' as const }
       const newContent = replaceNrNrqlAlerts(
         content,
         alerts,
         range.start,
         range.end
       )
-      writeFileSync(filePath, newContent, 'utf-8')
+      try {
+        writeFileSync(filePath, newContent, 'utf-8')
+      } catch {
+        return { ok: false, error: 'write_failed' as const }
+      }
       return { ok: true }
+    }
+  )
+
+  // Execute NRQL via New Relic GraphQL API; returns results array or error.
+  ipcMain.handle(
+    'app:executeNrql',
+    async (_e, nrqlQuery: string): Promise<{ data: unknown[] | null; error: string | null }> => {
+      try {
+        const config = readAppData().config
+        const apiKey = getApiKey(config)
+        const graphqlQuery = buildNrqlGraphQLQuery(nrqlQuery)
+        const response = await executeGraphQLQuery<NrqlResponse>(graphqlQuery, apiKey)
+        const results = extractResultsArray(response)
+        return { data: results, error: null }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return { data: null, error: message }
+      }
     }
   )
 

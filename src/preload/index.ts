@@ -3,6 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, ExecuteNrqlResult } from '@/types/api'
 
 const api = {
+  getVersion: () => ipcRenderer.invoke('app:getVersion') as Promise<string>,
   getDataDir: () => ipcRenderer.invoke('app:getDataDir') as Promise<string | null>,
   getGitRepoInfo: () => ipcRenderer.invoke('app:getGitRepoInfo') as Promise<import('@/types/api').GitRepoInfo>,
   getGitBranches: () => ipcRenderer.invoke('app:getGitBranches') as Promise<import('@/types/api').GitBranchesResult>,
@@ -26,6 +27,17 @@ const api = {
     ipcRenderer.invoke('app:saveNRAlertsForStack', stack, alerts) as Promise<SaveNRAlertsForStackResult>,
   executeNrql: (nrqlQuery: string) =>
     ipcRenderer.invoke('app:executeNrql', nrqlQuery) as Promise<ExecuteNrqlResult>,
+  checkForUpdate: () =>
+    ipcRenderer.invoke('app:checkForUpdate') as Promise<{
+      updateAvailable: boolean
+      currentVersion: string
+      latestVersion?: string
+      releaseUrl?: string
+      downloadUrl?: string | null
+      error?: string
+    }>,
+  openUrl: (url: string) => ipcRenderer.invoke('app:openUrl', url) as Promise<void>,
+  getReleasesUrl: () => ipcRenderer.invoke('app:getReleasesUrl') as Promise<string>,
 }
 
 if (process.contextIsolated) {

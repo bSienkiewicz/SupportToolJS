@@ -53,7 +53,7 @@ function writeAppData(data: AppData): void {
 
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -67,11 +67,11 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+  win.on('ready-to-show', () => {
+    win.show()
   })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
@@ -79,9 +79,9 @@ function createWindow(): void {
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
@@ -100,6 +100,9 @@ app.whenReady().then(() => {
   })
 
   // IPC handlers
+
+  // App version (for display and update checks)
+  ipcMain.handle('app:getVersion', () => app.getVersion())
 
   // Get data directory
   ipcMain.handle('app:getDataDir', () => readAppData().dataDir ?? null)
@@ -366,6 +369,115 @@ app.whenReady().then(() => {
       }
     }
   )
+
+  // Manual update check: fetch GitHub latest release and compare versions. No auto-download.
+  const GITHUB_RELEASES_API =
+    'https://api.github.com/repos/bSienkiewicz/SupportToolJS/releases/latest'
+  const GITHUB_RELEASES_PAGE = 'https://github.com/bSienkiewicz/SupportToolJS/releases'
+
+  function parseVersion(s: string): number[] {
+    const v = s.replace(/^v/, '').trim()
+    return v.split('.').map((n) => parseInt(n, 10) || 0)
+  }
+  function isNewerVersion(latest: string, current: string): boolean {
+    const a = parseVersion(latest)
+    const b = parseVersion(current)
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const x = a[i] ?? 0
+      const y = b[i] ?? 0
+      if (x > y) return true
+      if (x < y) return false
+    }
+    return false
+  }
+  function pickDownloadUrl(assets: { name: string; browser_download_url: string }[]): string | null {
+    const platform = process.platform
+    const arch = process.arch
+    const isMac = platform === 'darwin'
+    const isWin = platform === 'win32'
+    if (isMac) {
+      const preferArm = arch === 'arm64'
+      const macZip = assets.find(
+        (a) =>
+          a.name.includes('mac') &&
+          (a.name.endsWith('.zip') || a.name.endsWith('.dmg'))
+      )
+      const armZip = assets.find((a) => a.name.includes('arm64') && a.name.includes('mac'))
+      const x64Zip = assets.find((a) => a.name.includes('x64') && a.name.includes('mac'))
+      if (preferArm && armZip) return armZip.browser_download_url
+      if (!preferArm && x64Zip) return x64Zip.browser_download_url
+      return macZip?.browser_download_url ?? null
+    }
+    if (isWin) {
+      const exe = assets.find((a) => a.name.endsWith('.exe'))
+      return exe?.browser_download_url ?? null
+    }
+    const linux = assets.find(
+      (a) =>
+        a.name.includes('linux') &&
+        (a.name.endsWith('.AppImage') || a.name.endsWith('.deb'))
+    )
+    return linux?.browser_download_url ?? null
+  }
+
+  ipcMain.handle(
+    'app:checkForUpdate',
+    async (): Promise<{
+      updateAvailable: boolean
+      currentVersion: string
+      latestVersion?: string
+      releaseUrl?: string
+      downloadUrl?: string | null
+      error?: string
+    }> => {
+      const currentVersion = app.getVersion()
+      try {
+        const res = await fetch(GITHUB_RELEASES_API, {
+          headers: { Accept: 'application/vnd.github.v3+json' }
+        })
+        if (!res.ok) {
+          return {
+            updateAvailable: false,
+            currentVersion,
+            error: `GitHub API: ${res.status}`
+          }
+        }
+        const data = (await res.json()) as {
+          tag_name?: string
+          html_url?: string
+          assets?: { name: string; browser_download_url: string }[]
+        }
+        const latestVersion = data.tag_name?.replace(/^v/, '').trim()
+        if (!latestVersion) {
+          return { updateAvailable: false, currentVersion, error: 'No tag_name' }
+        }
+        const updateAvailable = isNewerVersion(latestVersion, currentVersion)
+        const releaseUrl = data.html_url ?? GITHUB_RELEASES_PAGE
+        const downloadUrl = data.assets?.length
+          ? pickDownloadUrl(data.assets)
+          : null
+        return {
+          updateAvailable,
+          currentVersion,
+          latestVersion,
+          releaseUrl,
+          downloadUrl,
+          ...(updateAvailable && data.assets?.length ? {} : {})
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          updateAvailable: false,
+          currentVersion,
+          error: message
+        }
+      }
+    }
+  )
+  ipcMain.handle('app:openUrl', (_e, url: string) => {
+    if (typeof url === 'string' && url.startsWith('http')) shell.openExternal(url)
+  })
+  ipcMain.handle('app:getReleasesUrl', () => GITHUB_RELEASES_PAGE)
 
   createWindow()
 

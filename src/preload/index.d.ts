@@ -9,6 +9,7 @@ import type {
 export type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, ExecuteNrqlResult }
 
 export interface AppAPI {
+  getVersion: () => Promise<string>
   getDataDir: () => Promise<string | null>
   getGitRepoInfo: () => Promise<import('@/types/api').GitRepoInfo>
   getGitBranches: () => Promise<import('@/types/api').GitBranchesResult>
@@ -26,6 +27,16 @@ export interface AppAPI {
   getNRAlertsForStack: (stack: string) => Promise<GetNRAlertsForStackResult>
   saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) => Promise<SaveNRAlertsForStackResult>
   executeNrql: (nrqlQuery: string) => Promise<ExecuteNrqlResult>
+  checkForUpdate: () => Promise<{
+    updateAvailable: boolean
+    currentVersion: string
+    latestVersion?: string
+    releaseUrl?: string
+    downloadUrl?: string | null
+    error?: string
+  }>
+  openUrl: (url: string) => Promise<void>
+  getReleasesUrl: () => Promise<string>
 }
 
 declare global {

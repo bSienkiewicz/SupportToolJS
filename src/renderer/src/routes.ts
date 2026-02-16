@@ -8,8 +8,8 @@ const NAV = [
     label: 'Alerts',
     path: '/alerts',
     submenus: [
-      { key: 'ALERTS_MANAGEMENT', label: 'Manage Alerts', path: '/alerts-management' },
-      { key: 'ALERTS_AUDIT', label: 'Alert Maintenance', path: '/alerts-audit' },
+      { key: 'ALERTS_MANAGEMENT', label: 'Manage Alerts', path: '/alerts-management', description: 'Manage alerts and their properties' },
+      { key: 'ALERTS_AUDIT', label: 'Alert Maintenance', path: '/alerts-audit', description: 'Find missing alerts and readjust thresholds' },
     ],
   },
   {

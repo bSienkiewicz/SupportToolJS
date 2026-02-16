@@ -15,9 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/renderer/src/components/ui/dialog'
-import { LucideUndo2 } from 'lucide-react'
 import { Spinner } from '../../../components/ui/spinner'
-import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 
 const AlertManagement = () => {
   const [changedAlerts, setChangedAlerts] = useState<AlertChange[]>([])
@@ -26,7 +24,6 @@ const AlertManagement = () => {
   const [selectedStack, setSelectedStack] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [alerts, setAlerts] = useState<NrAlert[]>([])
-  const [openResetDialog, setOpenResetDialog] = useState(false)
   const [search, setSearch] = useState('')
   const [editingAlertIndex, setEditingAlertIndex] = useState<number | null>(null)
 

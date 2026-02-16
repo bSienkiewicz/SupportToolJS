@@ -32,19 +32,22 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                   {item.label}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-48 gap-1 p-2">
+                  <ul className="grid w-96 gap-1">
                     {item.submenus.map((sub) => (
                       <li key={sub.path}>
                         <button
                           type="button"
                           className={cn(
-                            'flex w-full rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
+                            'flex w-full rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer',
                             currentPage === sub.path &&
                               'bg-accent text-accent-foreground'
                           )}
                           onClick={() => onPageChange(sub.path)}
                         >
-                          {sub.label}
+                          <div className="flex flex-col gap-1 items-start">
+                            {sub.label}
+                            {sub.description && <span className="text-xs text-muted-foreground text-left">{sub.description}</span>}
+                          </div>
                         </button>
                       </li>
                     ))}

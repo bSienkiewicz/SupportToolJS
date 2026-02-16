@@ -18,6 +18,8 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+# On ARM, electron-builder may ad-hoc sign when identity is null, causing ShipIt to fail.
+# Set CSC_IDENTITY_AUTO_DISCOVERY=false when running release:mac so the .app is unsigned.
 mac:
   identity: null
   entitlementsInherit: build/entitlements.mac.plist
@@ -39,6 +41,11 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+# GitHub Releases: electron-updater uses these to find new versions.
+# Set GH_TOKEN or GITHUB_TOKEN when running build with --publish.
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: bSienkiewicz
+  repo: SupportToolJS
+  vPrefixedTagName: true
+  releaseType: release

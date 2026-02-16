@@ -13,12 +13,22 @@ function isValidApiKey(key: string): boolean {
 const SettingsPage = () => {
     const [dataDir, setDataDir] = useState<string | null>(null)
     const [apiKey, setApiKey] = useState('')
+    const [version, setVersion] = useState<string>('')
+    const [checking, setChecking] = useState(false)
+    const [updateInfo, setUpdateInfo] = useState<{
+      latestVersion: string
+      releaseUrl: string
+      downloadUrl: string | null
+    } | null>(null)
+    const [releasesUrl, setReleasesUrl] = useState<string>('')
 
     const load = (): void => {
         window.api.getDataDir().then(setDataDir)
         window.api.getConfig().then((c) => {
             setApiKey(c.apiKey ?? '')
         })
+        window.api.getVersion().then(setVersion)
+        window.api.getReleasesUrl().then(setReleasesUrl)
     }
 
     useEffect(() => {
@@ -29,6 +39,56 @@ const SettingsPage = () => {
         window.api.pickDataDir().then((dir) => {
             if (dir) setDataDir(dir)
         })
+    }
+
+    const checkForUpdate = (): void => {
+        setChecking(true)
+        setUpdateInfo(null)
+        window.api
+            .checkForUpdate()
+            .then((result) => {
+                setChecking(false)
+                if (result.error) {
+                    toast.error(result.error)
+                    return
+                }
+                if (result.updateAvailable && result.latestVersion && result.releaseUrl) {
+                    setUpdateInfo({
+                        latestVersion: result.latestVersion,
+                        releaseUrl: result.releaseUrl,
+                        downloadUrl: result.downloadUrl ?? null
+                    })
+                    const urlToOpen = result.downloadUrl ?? result.releaseUrl
+                    toast.info(`Update ${result.latestVersion} available`, {
+                        description: 'Download manually from the releases page.',
+                        action: {
+                            label: 'Download',
+                            onClick: () => void window.api.openUrl(urlToOpen)
+                        },
+                        duration: 10000
+                    })
+                } else {
+                    toast.success('You’re up to date')
+                }
+            })
+            .catch(() => {
+                setChecking(false)
+                toast.error('Failed to check for updates')
+            })
+    }
+
+    const openReleases = (): void => {
+        const url = updateInfo?.releaseUrl ?? releasesUrl
+        if (url) window.api.openUrl(url)
+        else window.api.getReleasesUrl().then((u) => window.api.openUrl(u))
+    }
+
+    const openDownload = (): void => {
+        if (updateInfo?.downloadUrl) {
+            window.api.openUrl(updateInfo.downloadUrl)
+        } else {
+            openReleases()
+        }
     }
 
     const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -53,6 +113,41 @@ const SettingsPage = () => {
 
     return (
         <div className="p-6 space-y-8">
+            <section className="space-y-2">
+                <h2 className="text-sm font-medium text-muted-foreground">About</h2>
+                <p className="text-sm text-muted-foreground">
+                    Version {version || '…'}
+                </p>
+                <div className="flex flex-wrap gap-2 items-center">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={checkForUpdate}
+                        disabled={checking}
+                    >
+                        {checking ? 'Checking…' : 'Check for updates'}
+                    </Button>
+                    <Button
+                        variant="link"
+                        size="sm"
+                        onClick={openReleases}
+                        className="text-muted-foreground"
+                    >
+                        Releases
+                    </Button>
+                    {updateInfo && (
+                        <>
+                            <span className="text-sm text-muted-foreground">
+                                Update {updateInfo.latestVersion} available.
+                            </span>
+                            <Button size="sm" variant="default" onClick={openDownload}>
+                                Download
+                            </Button>
+                        </>
+                    )}
+                </div>
+            </section>
+
             <section className="space-y-2">
                 <h2 className="text-sm font-medium text-muted-foreground">Data directory</h2>
                 <p className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">

@@ -1,7 +1,7 @@
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@renderer/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/renderer/src/components/ui/select'
 import { useState } from 'react'
 import { useEffect } from 'react'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'
 import { LucidePlus, LucideRefreshCcw, LucideSearch } from 'lucide-react'
 import { Button } from './ui/button'
 

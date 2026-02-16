@@ -12,8 +12,7 @@
     "types": ["electron-vite/node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@renderer/*": ["./src/renderer/src/*"]
+      "@/*": ["./src/*"]
     },
     "moduleResolution": "bundler"
   }

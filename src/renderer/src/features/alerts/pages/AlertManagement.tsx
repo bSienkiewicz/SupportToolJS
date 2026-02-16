@@ -4,8 +4,9 @@ import { AlertListRow } from '../../../components/AlertListRow'
 import { EditAlertDialog } from '../../../components/EditAlertDialog'
 import type { NrAlert } from '../../../../../types/alerts'
 import { newAlertTemplate, type AlertChange } from '../alertUtils'
-import { Button } from '@renderer/components/ui/button'
-import { useFooter } from '@renderer/context/FooterContext'
+import { Button } from '@/renderer/src/components/ui/button'
+import { useFooter } from '@/renderer/src/context/FooterContext'
+import { RepoFooterInfo } from '@/renderer/src/components/RepoFooterInfo'
 import {
   Dialog,
   DialogContent,
@@ -13,10 +14,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@renderer/components/ui/dialog'
+} from '@/renderer/src/components/ui/dialog'
 import { LucideUndo2 } from 'lucide-react'
 import { Spinner } from '../../../components/ui/spinner'
-import { ButtonGroup } from '@renderer/components/ui/button-group'
+import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 
 const AlertManagement = () => {
   const [changedAlerts, setChangedAlerts] = useState<AlertChange[]>([])
@@ -72,23 +73,45 @@ const AlertManagement = () => {
     if (selectedStack) loadAlerts(selectedStack, { clearFirst: true })
   }, [selectedStack, loadAlerts])
 
-  const saveAlertFromDialog = useCallback((index: number, updated: NrAlert) => {
-    setAlerts((prev) =>
-      prev.map((a, i) => (i === index ? updated : a))
-    )
-    setChangedAlerts((prev) => {
-      const hasModifyOrAdd = prev.some(
-        (c) => (c.type === 'modify' || c.type === 'add') && c.index === index
-      )
-      if (hasModifyOrAdd) return prev
-      return [...prev, { type: 'modify', index }]
-    })
-  }, [])
-
-  const handleResetChanges = useCallback(() => {
-    if (!selectedStack) return setOpenResetDialog(false)
-    loadAlerts(selectedStack, { onDone: () => setOpenResetDialog(false) })
-  }, [selectedStack, loadAlerts])
+  const saveAlertFromDialog = useCallback(
+    (index: number, updated: NrAlert): Promise<void> => {
+      const newAlerts = alerts.map((a, i) => (i === index ? updated : a))
+      if (!selectedStack) {
+        setAlerts(newAlerts)
+        setChangedAlerts((prev) => {
+          const hasModifyOrAdd = prev.some(
+            (c) => (c.type === 'modify' || c.type === 'add') && c.index === index
+          )
+          if (hasModifyOrAdd) return prev
+          return [...prev, { type: 'modify', index }]
+        })
+        return Promise.resolve()
+      }
+      return window.api
+        .saveNRAlertsForStack(selectedStack, newAlerts)
+        .then((result) => {
+          if (result.ok) {
+            setAlerts(newAlerts)
+            setChangedAlerts((prev) => {
+              const hasModifyOrAdd = prev.some(
+                (c) => (c.type === 'modify' || c.type === 'add') && c.index === index
+              )
+              if (hasModifyOrAdd) return prev
+              return [...prev, { type: 'modify', index }]
+            })
+            return
+          }
+          const msg =
+            result.error === 'block_not_found'
+              ? 'nr_nrql_alerts block not found in file'
+              : result.error === 'no_data_dir'
+                ? 'No data directory set'
+                : result.error ?? 'Failed to save to file'
+          return Promise.reject(new Error(msg))
+        })
+    },
+    [alerts, selectedStack]
+  )
 
   const handleRefetch = useCallback(() => {
     if (selectedStack) loadAlerts(selectedStack, { clearFirst: true })
@@ -131,19 +154,8 @@ const AlertManagement = () => {
 
   useEffect(() => {
     setFooter(
-      <div className="flex gap-2 items-center">
-        <span>Hello world</span>
-        <ButtonGroup className="ml-auto">
-          <Button
-            onClick={() => setOpenResetDialog(true)}
-            disabled={changedAlerts.length === 0}
-            size="xs"
-            variant="outline"
-          >
-            <LucideUndo2 />
-            Reset
-          </Button>
-        </ButtonGroup>
+      <div className="flex items-center justify-between w-full gap-4">
+        <RepoFooterInfo />
       </div>
     )
     return () => setFooter(null)
@@ -206,29 +218,6 @@ const AlertManagement = () => {
         />
       )}
 
-      <Dialog open={openResetDialog} onOpenChange={setOpenResetDialog}>
-        <DialogContent showCloseButton={true}>
-          <DialogHeader>
-            <DialogTitle>Reset all changes</DialogTitle>
-            <DialogDescription>
-              This will reset all changes to the alerts. Unsaved changes will
-              be lost. Continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter showCloseButton={false}>
-            <Button
-              variant="outline"
-              onClick={() => setOpenResetDialog(false)}
-              size="sm"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleResetChanges} size="sm">
-              Reset all
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!alertToDelete} onOpenChange={(open) => !open && setAlertToDelete(null)}>
         <DialogContent showCloseButton={true}>

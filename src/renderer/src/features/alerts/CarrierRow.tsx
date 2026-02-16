@@ -1,9 +1,9 @@
 import React, { memo, useCallback } from 'react'
 import { TableCell, TableRow } from '@/renderer/src/components/ui/table'
 import { Checkbox } from '@/renderer/src/components/ui/checkbox'
-import { buildConfirmationNrql, type Presence } from '../features/alerts/alertAuditHelpers'
-import { InputGroup, InputGroupAddon, InputGroupInput } from './ui/input-group'
-import { Button } from './ui/button'
+import { buildConfirmationNrql, type Presence } from './alertAuditHelpers'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../components/ui/input-group'
+import { Button } from '../../components/ui/button'
 import { toast } from 'sonner'
 import { LucideCopy } from 'lucide-react'
 

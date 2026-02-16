@@ -5,7 +5,7 @@ import {
   NavigationMenuTrigger,
   NavigationMenuContent,
   navigationMenuTriggerStyle,
-} from '@renderer/components/ui/navigation-menu'
+} from '@/renderer/src/components/ui/navigation-menu'
 import { cn } from 'src/renderer/lib/utils'
 import { NAV } from '../routes'
 

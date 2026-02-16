@@ -164,7 +164,6 @@ export type PrintDurationProposedConfig = {
 
 /**
  * Single place for suggested threshold formula and cap: config keys, defaults, and descriptions.
- * Values are read from app config (Settings); missing keys use these defaults.
  */
 export const PRINT_DURATION_THRESHOLD_CONFIG = {
   /** Method: 'StdDev' (avg + k*stddev) or 'Fallback' (avg*mult + offset) */

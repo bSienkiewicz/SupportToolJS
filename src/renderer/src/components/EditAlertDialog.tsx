@@ -20,21 +20,21 @@ import {
   getPrintDurationProposedConfig,
   calculateSuggestedThreshold,
 } from '../features/alerts/alertAuditHelpers'
-import { Button } from '@renderer/components/ui/button'
+import { Button } from '@/renderer/src/components/ui/button'
 import {
   Field,
   FieldContent,
   FieldLabel,
   FieldSet,
-} from '@renderer/components/ui/field'
-import { Input } from '@renderer/components/ui/input'
+} from '@/renderer/src/components/ui/field'
+import { Input } from '@/renderer/src/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@renderer/components/ui/select'
+} from '@/renderer/src/components/ui/select'
 import { NrqlHighlightedTextarea } from './NrqlHighlightedTextarea'
 import {
   Dialog,
@@ -43,7 +43,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@renderer/components/ui/dialog'
+} from '@/renderer/src/components/ui/dialog'
 import { LucideSave, LucideTrash2, LucideCalculator } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from './ui/switch'
@@ -55,7 +55,7 @@ export type EditAlertDialogProps = {
   onOpenChange: (open: boolean) => void
   alert: NrAlert
   alertIndex: number
-  onSave: (index: number, patch: NrAlert) => void
+  onSave: (index: number, patch: NrAlert) => void | Promise<void>
   onRequestDelete: (index: number, name: string) => void
   /** Stack name for recalculating print duration threshold (e.g. from Alert Management). */
   selectedStack?: string | null
@@ -76,6 +76,7 @@ export function EditAlertDialog({
   const [showChangelog, setShowChangelog] = useState(false)
   const [suggestedThreshold, setSuggestedThreshold] = useState<number | null>(null)
   const [recalcLoading, setRecalcLoading] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
   const originalSnapshotRef = useRef<NrAlert>(alert)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
@@ -122,11 +123,18 @@ export function EditAlertDialog({
     return () => cancelAnimationFrame(id)
   }, [showChangelog, hasChanges])
 
-  const handleConfirmSave = useCallback(() => {
-    onSave(alertIndex, localAlert)
-    setShowChangelog(false)
-    onOpenChange(false)
-    toast.success('Alert saved')
+  const handleConfirmSave = useCallback(async () => {
+    setSaveLoading(true)
+    try {
+      await Promise.resolve(onSave(alertIndex, localAlert))
+      setShowChangelog(false)
+      onOpenChange(false)
+      toast.success('Alert saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSaveLoading(false)
+    }
   }, [alertIndex, localAlert, onSave, onOpenChange])
 
   const handleCancelChangelog = useCallback(() => {
@@ -501,8 +509,8 @@ export function EditAlertDialog({
                 ))}
               </ul>
               <div className="flex gap-2 pt-2">
-                <Button size="sm" onClick={handleConfirmSave}>
-                  Confirm save
+                <Button size="sm" onClick={handleConfirmSave} disabled={saveLoading}>
+                  {saveLoading ? 'Saving…' : 'Confirm save'}
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleCancelChangelog}>
                   Cancel

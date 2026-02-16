@@ -54,7 +54,7 @@ export const ROUTES = ROUTES_BUILD as {
 
 export type Route = (typeof ROUTES)[keyof typeof ROUTES]
 
-export const DEFAULT_PATH: Route = ROUTES.SETTINGS
+export const DEFAULT_PATH: Route = ROUTES.ALERTS_MANAGEMENT
 
 const VALID_PATHS = new Set<string>(ALL_PATHS)
 

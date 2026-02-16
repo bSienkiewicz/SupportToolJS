@@ -10,6 +10,14 @@ export type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, Ex
 
 export interface AppAPI {
   getDataDir: () => Promise<string | null>
+  getGitRepoInfo: () => Promise<import('@/types/api').GitRepoInfo>
+  getGitBranches: () => Promise<import('@/types/api').GitBranchesResult>
+  gitCheckout: (branch: string) => Promise<import('@/types/api').GitOpResult>
+  gitCreateBranch: (newName: string, fromBranch: string) => Promise<import('@/types/api').GitOpResult>
+  gitPull: () => Promise<import('@/types/api').GitOpResult>
+  getGitUncommittedChanges: () => Promise<import('@/types/api').GitUncommittedChangesResult>
+  gitDiscardAll: () => Promise<import('@/types/api').GitOpResult>
+  gitDiscardFile: (path: string) => Promise<import('@/types/api').GitOpResult>
   pickDataDir: () => Promise<string | null>
   getConfig: () => Promise<Record<string, string>>
   getConfigValue: (key: string) => Promise<string | null>

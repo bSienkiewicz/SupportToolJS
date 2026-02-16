@@ -11,7 +11,6 @@ export type AlertDisplayType = 'print_duration' | 'error_rate'
  */
 export function getAlertType(alert: NrAlert): AlertDisplayType | null {
   const name = String(alert.name ?? '').toLowerCase()
-  const nrql = String(alert.nrql_query ?? '').toLowerCase()
 
   const looksLikeErrorRate =
     name.includes('increased error rate')

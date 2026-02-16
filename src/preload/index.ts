@@ -4,6 +4,17 @@ import type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, Ex
 
 const api = {
   getDataDir: () => ipcRenderer.invoke('app:getDataDir') as Promise<string | null>,
+  getGitRepoInfo: () => ipcRenderer.invoke('app:getGitRepoInfo') as Promise<import('@/types/api').GitRepoInfo>,
+  getGitBranches: () => ipcRenderer.invoke('app:getGitBranches') as Promise<import('@/types/api').GitBranchesResult>,
+  gitCheckout: (branch: string) => ipcRenderer.invoke('app:gitCheckout', branch) as Promise<import('@/types/api').GitOpResult>,
+  gitCreateBranch: (newName: string, fromBranch: string) =>
+    ipcRenderer.invoke('app:gitCreateBranch', newName, fromBranch) as Promise<import('@/types/api').GitOpResult>,
+  gitPull: () => ipcRenderer.invoke('app:gitPull') as Promise<import('@/types/api').GitOpResult>,
+  getGitUncommittedChanges: () =>
+    ipcRenderer.invoke('app:getGitUncommittedChanges') as Promise<import('@/types/api').GitUncommittedChangesResult>,
+  gitDiscardAll: () => ipcRenderer.invoke('app:gitDiscardAll') as Promise<import('@/types/api').GitOpResult>,
+  gitDiscardFile: (path: string) =>
+    ipcRenderer.invoke('app:gitDiscardFile', path) as Promise<import('@/types/api').GitOpResult>,
   pickDataDir: () => ipcRenderer.invoke('app:pickDataDir') as Promise<string | null>,
   getConfig: () => ipcRenderer.invoke('app:getConfig') as Promise<Record<string, string>>,
   getConfigValue: (key: string) => ipcRenderer.invoke('app:getConfigValue', key) as Promise<string | null>,

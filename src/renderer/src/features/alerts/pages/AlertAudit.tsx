@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AlertHeader from '../../../components/Header'
 import type { GetNRAlertsForStackResult } from '@/types/api'
-import { Button } from '@renderer/components/ui/button'
-import { ButtonGroup } from '@renderer/components/ui/button-group'
+import { Button } from '@/renderer/src/components/ui/button'
+import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { Spinner } from '../../../components/ui/spinner'
 import { toast } from 'sonner'
 import {
@@ -11,9 +11,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@renderer/components/ui/table'
+} from '@/renderer/src/components/ui/table'
 import { Checkbox } from '../../../components/ui/checkbox'
-import { useFooter } from '@renderer/context/FooterContext'
+import { useFooter } from '@/renderer/src/context/FooterContext'
+import { RepoFooterInfo } from '@/renderer/src/components/RepoFooterInfo'
 import CarrierRow from '../../../components/CarrierRow'
 import {
   NRQL_TEMPLATE,
@@ -273,9 +274,11 @@ const AlertAudit = () => {
 
   useEffect(() => {
     setFooter(
-      <div className="flex gap-2 items-center">
+      <div className="flex items-center justify-between w-full gap-4">
+        <RepoFooterInfo />
+        <div className="flex gap-2 items-center">
           <Button
-            onClick={() => handleAddMissingAlerts()} className='ml-auto'
+            onClick={() => handleAddMissingAlerts()}
             size="xs"
             disabled={selectedCarriers.size === 0 || !selectedStack || addLoading}
           >
@@ -307,6 +310,7 @@ const AlertAudit = () => {
               'Adjust thresholds'
             )}
           </Button>
+        </div>
       </div>
     )
     return () => setFooter(null)

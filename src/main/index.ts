@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import {
   readFileSync,
   writeFileSync,
@@ -8,6 +8,7 @@ import {
   statSync,
   readdirSync,
 } from 'fs'
+import { execSync, spawnSync } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
@@ -102,6 +103,155 @@ app.whenReady().then(() => {
 
   // Get data directory
   ipcMain.handle('app:getDataDir', () => readAppData().dataDir ?? null)
+
+  // Git repo info for data directory (branch when repo, else just path)
+  ipcMain.handle('app:getGitRepoInfo', (): { branch: string | null; dataDir: string | null } => {
+    const dataDir = readAppData().dataDir ?? null
+    if (!dataDir) return { branch: null, dataDir: null }
+    const gitDir = join(dataDir, '.git')
+    if (!existsSync(gitDir) || !statSync(gitDir, { throwIfNoEntry: false })?.isDirectory()) {
+      return { branch: null, dataDir }
+    }
+    try {
+      const branch = execSync('git rev-parse --abbrev-ref HEAD', {
+        encoding: 'utf-8',
+        cwd: dataDir,
+      }).trim()
+      return { branch: branch || null, dataDir }
+    } catch {
+      return { branch: null, dataDir }
+    }
+  })
+
+  // Git branches list (local) and current branch
+  ipcMain.handle('app:getGitBranches', (): { branches: string[]; current: string | null } => {
+    const dataDir = readAppData().dataDir ?? null
+    if (!dataDir) return { branches: [], current: null }
+    const gitDir = join(dataDir, '.git')
+    if (!existsSync(gitDir) || !statSync(gitDir, { throwIfNoEntry: false })?.isDirectory()) {
+      return { branches: [], current: null }
+    }
+    try {
+      const r = spawnSync(
+        'git',
+        ['for-each-ref', '--format=%(refname:short)', 'refs/heads'],
+        { encoding: 'utf-8', cwd: dataDir }
+      )
+      if (r.status !== 0) return { branches: [], current: null }
+      const branches = (r.stdout ?? '').split('\n').map((s) => s.trim()).filter(Boolean)
+      const currentR = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+        encoding: 'utf-8',
+        cwd: dataDir,
+      })
+      const current = currentR.status === 0 ? (currentR.stdout ?? '').trim() || null : null
+      return { branches, current }
+    } catch {
+      return { branches: [], current: null }
+    }
+  })
+
+  // Git checkout branch
+  ipcMain.handle('app:gitCheckout', async (_e, branch: string): Promise<{ ok: boolean; error: string | null }> => {
+    const dataDir = readAppData().dataDir ?? null
+    if (!dataDir) return { ok: false, error: 'No data directory' }
+    const r = spawnSync('git', ['checkout', branch], { encoding: 'utf-8', cwd: dataDir })
+    if (r.status !== 0) {
+      return { ok: false, error: r.stderr?.trim() || r.error?.message || 'Checkout failed' }
+    }
+    return { ok: true, error: null }
+  })
+
+  // Git create branch and checkout
+  ipcMain.handle(
+    'app:gitCreateBranch',
+    async (_e, newName: string, fromBranch: string): Promise<{ ok: boolean; error: string | null }> => {
+      const dataDir = readAppData().dataDir ?? null
+      if (!dataDir) return { ok: false, error: 'No data directory' }
+      const r = spawnSync('git', ['checkout', '-b', newName, fromBranch], {
+        encoding: 'utf-8',
+        cwd: dataDir,
+      })
+      if (r.status !== 0) {
+        return { ok: false, error: r.stderr?.trim() || r.error?.message || 'Create branch failed' }
+      }
+      return { ok: true, error: null }
+    }
+  )
+
+  // Git pull
+  ipcMain.handle('app:gitPull', async (): Promise<{ ok: boolean; error: string | null }> => {
+    const dataDir = readAppData().dataDir ?? null
+    if (!dataDir) return { ok: false, error: 'No data directory' }
+    const r = spawnSync('git', ['pull'], { encoding: 'utf-8', cwd: dataDir })
+    if (r.status !== 0) {
+      return { ok: false, error: r.stderr?.trim() || r.error?.message || 'Pull failed' }
+    }
+    return { ok: true, error: null }
+  })
+
+  // Git uncommitted changes (working tree vs HEAD)
+  ipcMain.handle(
+    'app:getGitUncommittedChanges',
+    (): { files: { path: string; fullPath: string; added: number; deleted: number; status: string }[] } => {
+      const dataDir = readAppData().dataDir ?? null
+      if (!dataDir) return { files: [] }
+      const gitDir = join(dataDir, '.git')
+      if (!existsSync(gitDir) || !statSync(gitDir, { throwIfNoEntry: false })?.isDirectory()) {
+        return { files: [] }
+      }
+      const statusR = spawnSync('git', ['status', '--porcelain'], {
+        encoding: 'utf-8',
+        cwd: dataDir,
+      })
+      if (statusR.status !== 0) return { files: [] }
+      const statusOut = (statusR.stdout ?? '').trim()
+      const files: { path: string; fullPath: string; added: number; deleted: number; status: string }[] = []
+      const seen = new Set<string>()
+      for (const line of statusOut.split('\n')) {
+        if (line.length < 3) continue
+        const xy = line.slice(0, 2).trim()
+        let path = line.slice(2).trimStart().replace(/\\/g, '/')
+        if (path.includes(' -> ')) path = path.split(' -> ')[1]?.trim() ?? path
+        if (!path || seen.has(path)) continue
+        seen.add(path)
+        const fullPath = resolve(dataDir, path)
+        files.push({
+          path,
+          fullPath,
+          added: 0,
+          deleted: 0,
+          status: xy,
+        })
+      }
+      return { files }
+    }
+  )
+
+  // Git discard all uncommitted changes (reset --hard HEAD)
+  ipcMain.handle('app:gitDiscardAll', async (): Promise<{ ok: boolean; error: string | null }> => {
+    const dataDir = readAppData().dataDir ?? null
+    if (!dataDir) return { ok: false, error: 'No data directory' }
+    const r = spawnSync('git', ['reset', '--hard', 'HEAD'], { encoding: 'utf-8', cwd: dataDir })
+    if (r.status !== 0) {
+      return { ok: false, error: r.stderr?.trim() || r.error?.message || 'Discard failed' }
+    }
+    return { ok: true, error: null }
+  })
+
+  // Git discard one file (restore from HEAD)
+  ipcMain.handle(
+    'app:gitDiscardFile',
+    async (_e, path: string): Promise<{ ok: boolean; error: string | null }> => {
+      const dataDir = readAppData().dataDir ?? null
+      if (!dataDir) return { ok: false, error: 'No data directory' }
+      if (!path || typeof path !== 'string') return { ok: false, error: 'Invalid path' }
+      const r = spawnSync('git', ['checkout', '--', path], { encoding: 'utf-8', cwd: dataDir })
+      if (r.status !== 0) {
+        return { ok: false, error: r.stderr?.trim() || r.error?.message || 'Discard failed' }
+      }
+      return { ok: true, error: null }
+    }
+  )
 
   // Pick data directory
   ipcMain.handle('app:pickDataDir', async () => {

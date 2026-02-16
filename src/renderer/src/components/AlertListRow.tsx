@@ -1,9 +1,9 @@
-import type { NrAlert } from '../../../../types/alerts'
-import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from '../../components/ui/item'
-import { Button } from '../../components/ui/button'
+import type { NrAlert } from '../../../types/alerts'
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from './ui/item'
+import { Button } from './ui/button'
 import { LucideCircle, LucideCircleCheck } from 'lucide-react'
-import { Badge } from '../../components/ui/badge'
-import { getAlertType } from './alertUtils'
+import { Badge } from './ui/badge'
+import { getAlertType } from '../features/alerts/alertUtils'
 
 type AlertListRowProps = {
   alert: NrAlert
@@ -52,7 +52,13 @@ export function AlertListRow({ alert, originalIndex, onSelect }: AlertListRowPro
             <Badge variant={'outline'}>Other</Badge>
           )}
           <ThresholdBadge alert={alert} />
+          {alert.close_violations_on_expiration && (
+            <Badge variant={'outline'} className='bg-green-100 text-green-500'>LOS</Badge>
+          )}
         </ItemTitle>
+        <ItemDescription>
+          {alert.description}
+        </ItemDescription>
       </ItemContent>
       <ItemActions>
         <Button variant={'outline'} size={'xs'} onClick={() => onSelect(originalIndex)}>

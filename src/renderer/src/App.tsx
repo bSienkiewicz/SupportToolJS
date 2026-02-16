@@ -4,7 +4,6 @@ import SettingsPage from './SettingsPage'
 import Navigation from './layout/Navigation'
 import { ROUTES, getPathFromHash } from './routes'
 import AlertManagement from './features/alerts/pages/AlertManagement'
-import AlertThresholds from './features/alerts/pages/AlertThresholds'
 import { FooterProvider, FooterSlot } from './context/FooterContext'
 import AlertAudit from './features/alerts/pages/AlertAudit'
 import { TooltipProvider } from './components/ui/tooltip'
@@ -39,7 +38,6 @@ function App(): React.JSX.Element {
             {page === ROUTES.ALERTS && <div className="p-6">Alerts</div>}
             {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
             {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
-            {page === ROUTES.ALERTS_THRESHOLDS && <AlertThresholds />}
             <Toaster />
           </main>
           <FooterSlot />

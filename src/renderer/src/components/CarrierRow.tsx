@@ -1,9 +1,9 @@
 import React, { memo, useCallback } from 'react'
 import { TableCell, TableRow } from '@renderer/components/ui/table'
 import { Checkbox } from '@renderer/components/ui/checkbox'
-import { buildConfirmationNrql, type Presence } from './alertAuditHelpers'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '../../components/ui/input-group'
-import { Button } from '../../components/ui/button'
+import { buildConfirmationNrql, type Presence } from '../features/alerts/alertAuditHelpers'
+import { InputGroup, InputGroupAddon, InputGroupInput } from './ui/input-group'
+import { Button } from './ui/button'
 import { toast } from 'sonner'
 import { LucideCopy } from 'lucide-react'
 
@@ -48,8 +48,19 @@ const CarrierRow = memo(function CarrierRow({
     toast.success('Confirmation NRQL copied to clipboard')
   }, [name, presence.printDurationThreshold, proposedPrintDurationThreshold])
 
+  const handleRowClick = useCallback(
+    (e: React.MouseEvent<HTMLTableRowElement>) => {
+      const target = e.target as HTMLElement
+      if (target.closest('input, button, [role="checkbox"]')) return
+      onToggle(name, !checked)
+    },
+    [name, checked, onToggle]
+  )
+
+  const stopPropagation = useCallback((e: React.MouseEvent) => e.stopPropagation(), [])
+
   return (
-    <TableRow>
+    <TableRow onClick={handleRowClick} className="cursor-pointer">
       <TableCell>
         <Checkbox
           checked={checked}
@@ -79,7 +90,7 @@ const CarrierRow = memo(function CarrierRow({
           aria-label={`Error rate alert for ${name}`}
         />
       </TableCell>
-      <TableCell>
+      <TableCell onClick={stopPropagation}>
         {presence.printDuration ? (
           <div className="flex items-center gap-2">
             <InputGroup className="max-w-[100px]">
@@ -125,7 +136,7 @@ const CarrierRow = memo(function CarrierRow({
           <span className="text-muted-foreground text-sm">—</span>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell onClick={stopPropagation}>
         <Button variant={'outline'} size={'xs'} onClick={() => handleCopyConfirmationNrql()}>
           <LucideCopy />
         </Button>

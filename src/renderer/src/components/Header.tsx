@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useEffect } from 'react'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
 import { LucidePlus, LucideRefreshCcw, LucideSearch } from 'lucide-react'
-import { Button } from '../../components/ui/button'
+import { Button } from './ui/button'
 
 const AlertHeader = ({ title, showItems, onChange, onSearch, onRefetch, refetchDisabled, onAddAlert }: { title: string, showItems: string[], onChange: (value: string) => void, onSearch: (value: string) => void, onRefetch: () => void, refetchDisabled?: boolean, onAddAlert: () => void }) => {
     const [stacks, setStacks] = useState<string[]>([])

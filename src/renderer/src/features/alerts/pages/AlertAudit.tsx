@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import AlertHeader from '../Header'
+import AlertHeader from '../../../components/Header'
 import type { GetNRAlertsForStackResult } from '@/types/api'
 import { Button } from '@renderer/components/ui/button'
 import { ButtonGroup } from '@renderer/components/ui/button-group'
@@ -14,7 +14,7 @@ import {
 } from '@renderer/components/ui/table'
 import { Checkbox } from '../../../components/ui/checkbox'
 import { useFooter } from '@renderer/context/FooterContext'
-import CarrierRow from '../CarrierRow'
+import CarrierRow from '../../../components/CarrierRow'
 import {
   NRQL_TEMPLATE,
   extractCarrierNames,
@@ -324,7 +324,7 @@ const AlertAudit = () => {
   return (
     <div className="flex flex-col h-full">
       <AlertHeader
-        title="Find Missing Alerts"
+        title="Alert Maintenance"
         showItems={[]}
         onChange={setSelectedStack}
         onSearch={() => { }}

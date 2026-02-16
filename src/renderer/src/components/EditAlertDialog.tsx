@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { NrAlert } from '../../../../types/alerts'
+import type { NrAlert } from '../../../types/alerts'
 import {
   SEVERITY_OPTIONS,
   AGGREGATION_METHOD_OPTIONS,
   CRITICAL_OPERATOR_OPTIONS,
   CRITICAL_THRESHOLD_OCCURRENCES_OPTIONS,
-} from '../../../../types/alerts'
+} from '../../../types/alerts'
 import {
   getAlertChangelog,
   isAlertInvalid,
   isExpirationDurationInvalid,
   stripForbiddenChars,
   hasForbiddenChars,
-} from './alertUtils'
+} from '../features/alerts/alertUtils'
 import {
   PRINT_DURATION_SUFFIX,
   buildThresholdStatsNrql,
   parseThresholdStatsResults,
   getPrintDurationProposedConfig,
   calculateSuggestedThreshold,
-} from './alertAuditHelpers'
+} from '../features/alerts/alertAuditHelpers'
 import { Button } from '@renderer/components/ui/button'
 import {
   Field,
@@ -35,19 +35,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@renderer/components/ui/select'
-import { Textarea } from '@renderer/components/ui/textarea'
+import { NrqlHighlightedTextarea } from './NrqlHighlightedTextarea'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@renderer/components/ui/dialog'
 import { LucideSave, LucideTrash2, LucideCalculator } from 'lucide-react'
 import { toast } from 'sonner'
-import { Switch } from '../../components/ui/switch'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '../../components/ui/input-group'
-import { Spinner } from '../../components/ui/spinner'
+import { Switch } from './ui/switch'
+import { InputGroup, InputGroupAddon, InputGroupInput } from './ui/input-group'
+import { Spinner } from './ui/spinner'
 
 export type EditAlertDialogProps = {
   open: boolean
@@ -184,10 +185,13 @@ export function EditAlertDialog({
         showCloseButton={true}
         className="max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden min-w-0"
       >
-        <DialogHeader className="p-6 pb-0 shrink-0 min-w-0">
-          <DialogTitle className="truncate pr-8 pb-4 border-b">
+        <DialogHeader className="p-6 shrink-0 min-w-0 pb-4 border-b">
+          <DialogTitle className="truncate pr-8">
             Edit alert: {localAlert.name}
           </DialogTitle>
+          <DialogDescription>
+            Edit name, NRQL, thresholds, and other alert settings.
+          </DialogDescription>
         </DialogHeader>
 
         <div
@@ -242,7 +246,7 @@ export function EditAlertDialog({
               <span className="text-sm font-medium text-muted-foreground">NRQL & Runbook Settings</span>
               <Field>
                 <FieldLabel>NRQL Query</FieldLabel>
-                <Textarea
+                <NrqlHighlightedTextarea
                   value={localAlert.nrql_query}
                   onChange={(e) =>
                     updateLocal({ nrql_query: stripForbiddenChars(e.target.value) })

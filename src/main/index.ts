@@ -337,12 +337,14 @@ app.whenReady().then(() => {
       }
       const range = getBlockRange(content)
       if (!range) return { ok: false, error: 'block_not_found' as const }
-      const newContent = replaceNrNrqlAlerts(
+      let newContent = replaceNrNrqlAlerts(
         content,
         alerts,
         range.start,
         range.end
       )
+      // Avoid accumulating trailing newlines: normalize to exactly one at end of file.
+      newContent = newContent.replace(/\n+$/, '\n')
       try {
         writeFileSync(filePath, newContent, 'utf-8')
       } catch {

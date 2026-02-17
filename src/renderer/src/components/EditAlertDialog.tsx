@@ -63,6 +63,25 @@ export type EditAlertDialogProps = {
 
 const SAMPLING_DAYS = 7
 
+/** Keys shown in the main form sections (Basic, NRQL, Aggregation, Critical). Any other alert key goes under "Other fields". */
+const BASIC_FORM_KEYS = new Set([
+  'name', 'description', 'nrql_query', 'runbook_url', 'severity', 'enabled',
+  'aggregation_method', 'aggregation_window', 'aggregation_delay',
+  'critical_operator', 'critical_threshold', 'critical_threshold_duration',
+  'critical_threshold_occurrences', 'close_violations_on_expiration', 'expiration_duration',
+])
+
+const OTHER_FIELD_LABELS: Record<string, string> = {
+  fill_value: 'Fill value',
+  fill_option: 'Fill option',
+  policy_id: 'Policy ID',
+  title_template: 'Title template',
+  ignore_on_expected_termination: 'Ignore on expected termination',
+}
+function getOtherFieldLabel(key: string): string {
+  return OTHER_FIELD_LABELS[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export function EditAlertDialog({
   open,
   onOpenChange,
@@ -491,6 +510,57 @@ export function EditAlertDialog({
                 </Field>
               )}
             </div>
+
+            {Object.keys(localAlert).filter((k) => !BASIC_FORM_KEYS.has(k)).length > 0 && (
+              <div className="flex flex-col gap-4">
+                <span className="text-sm font-medium text-muted-foreground">Other fields</span>
+                {Object.keys(localAlert)
+                  .filter((k) => !BASIC_FORM_KEYS.has(k))
+                  .map((key) => {
+                    const value = localAlert[key]
+                    const label = getOtherFieldLabel(key)
+                    if (typeof value === 'boolean') {
+                      return (
+                        <Field key={key} orientation="horizontal">
+                          <FieldContent>
+                            <FieldLabel htmlFor={`other-${key}-${alertIndex}`}>{label}</FieldLabel>
+                          </FieldContent>
+                          <Switch
+                            id={`other-${key}-${alertIndex}`}
+                            checked={value}
+                            onCheckedChange={(checked) => updateLocal({ [key]: checked })}
+                          />
+                        </Field>
+                      )
+                    }
+                    if (typeof value === 'number') {
+                      return (
+                        <Field key={key}>
+                          <FieldLabel>{label}</FieldLabel>
+                          <Input
+                            type="number"
+                            value={value}
+                            onChange={(e) =>
+                              updateLocal({ [key]: Number(e.target.value) })
+                            }
+                          />
+                        </Field>
+                      )
+                    }
+                    return (
+                      <Field key={key}>
+                        <FieldLabel>{label}</FieldLabel>
+                        <Input
+                          value={value === undefined || value === null ? '' : String(value)}
+                          onChange={(e) =>
+                            updateLocal({ [key]: e.target.value || undefined })
+                          }
+                        />
+                      </Field>
+                    )
+                  })}
+              </div>
+            )}
           </FieldSet>
 
           {showChangelog && hasChanges && (

@@ -164,15 +164,16 @@ export type PrintDurationProposedConfig = {
 
 /**
  * Single place for suggested threshold formula and cap: config keys, defaults, and descriptions.
+ * Canonical formula: Proposed duration = Average(7-day) + (Standard Deviation × Multiplier), min 3, max 8.
  */
 export const PRINT_DURATION_THRESHOLD_CONFIG = {
-  /** Method: 'StdDev' (avg + k*stddev) or 'Fallback' (avg*mult + offset) */
+  /** Method: 'StdDev' uses Average + (StdDev × Multiplier); 'Fallback' uses avg*mult + offset */
   method: {
     key: 'PrintDuration.ProposedValues.Method',
-    default: 'Fallback' as const,
+    default: 'StdDev' as const,
     description: 'StdDev or Fallback',
   },
-  /** StdDev method: multiplier for standard deviation (avg + k * stddev) */
+  /** StdDev method: multiplier for standard deviation. Formula: proposed = avg + (stddev × multiplier), then clamp [min, max]. */
   stdDevMultiplier: {
     key: 'PrintDuration.ProposedValues.StdDevMultiplier',
     default: 2,
@@ -254,9 +255,9 @@ const DEFAULT_MIN = PRINT_DURATION_THRESHOLD_CONFIG.minimumAbsoluteThreshold.def
 const DEFAULT_MAX = PRINT_DURATION_THRESHOLD_CONFIG.maximumAbsoluteThreshold.default
 
 /**
- * Equivalent to C# CalculateSuggestedThreshold.
- * Uses StdDev method when config.method === 'StdDev' and k is set; otherwise fallback formula.
- * Result is always clamped to [min, max] (default max = 8) and rounded to nearest 0.5.
+ * Proposed duration = Average(7-day) + (Standard Deviation × Multiplier), then clamped to [min, max] (default min 3, max 8).
+ * Uses StdDev method when config.method === 'StdDev' and multiplier is set; otherwise fallback formula (avg*mult + offset).
+ * Result is rounded to nearest 0.5.
  */
 export function calculateSuggestedThreshold(
   stats: CarrierDurationStatistics,

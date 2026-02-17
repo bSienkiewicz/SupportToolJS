@@ -88,7 +88,12 @@ function parseBlockInChunks(content: string): NrAlert[] | null {
       const parsed = hcl.parseToObject(chunk)
       const raw = getAlertsRaw(parsed)
       if (Array.isArray(raw) && raw.length > 0) {
-        alerts.push(raw[0] as NrAlert)
+        const item = raw[0]
+        alerts.push(
+          typeof item === 'object' && item !== null && !Array.isArray(item)
+            ? normalizeParsedAlert(item as Record<string, unknown>)
+            : (item as NrAlert)
+        )
       }
     } catch {
       return null
@@ -98,12 +103,31 @@ function parseBlockInChunks(content: string): NrAlert[] | null {
   return alerts.length > 0 ? alerts : null
 }
 
+/** Ensure values that were parsed as the string "null" (e.g. fill_value = null in HCL) are undefined, not the literal "null". */
+function normalizeParsedAlert(obj: Record<string, unknown>): NrAlert {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === 'null' || (typeof v === 'string' && v.trim() === 'null')) {
+      out[k] = undefined
+    } else if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+      out[k] = normalizeParsedAlert(v as Record<string, unknown>)
+    } else {
+      out[k] = v
+    }
+  }
+  return out as NrAlert
+}
+
 /** Extract nr_nrql_alerts array from hcl2 parse result. Handles [obj], obj, or array of blocks. */
 function extractAlertsFromParsed(parsed: unknown): NrAlert[] | null {
   if (parsed == null) return null
   const raw = getAlertsRaw(parsed)
   if (!Array.isArray(raw)) return null
-  return raw as NrAlert[]
+  return raw.map((item) =>
+    typeof item === 'object' && item !== null && !Array.isArray(item)
+      ? normalizeParsedAlert(item as Record<string, unknown>)
+      : (item as NrAlert)
+  )
 }
 
 function getAlertsRaw(parsed: unknown): unknown {
@@ -185,10 +209,10 @@ function escapeStringValue(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
-function formatAlertValue(v: string | number | boolean | undefined): string {
+function formatAlertValue(v: string | number | boolean | undefined | null): string {
   if (typeof v === 'boolean') return v ? 'true' : 'false'
   if (typeof v === 'number') return String(v)
-  if (v === undefined) return 'null'
+  if (v === undefined || v === null || v === 'null') return 'null'
   return `"${escapeStringValue(String(v))}"`
 }
 

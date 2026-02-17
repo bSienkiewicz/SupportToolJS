@@ -68,7 +68,7 @@ const SettingsPage = () => {
                         duration: 10000
                     })
                 } else {
-                    toast.success('You’re up to date')
+                    toast.success("You're up to date")
                 }
             })
             .catch(() => {

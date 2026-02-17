@@ -19,14 +19,14 @@ function ThresholdBadge({ alert }: { alert: NrAlert }) {
   if (Number.isNaN(value)) return null
   if (type === 'print_duration') {
     return (
-      <Badge variant="secondary" className="font-mono">
+      <Badge variant="secondary">
         {value}s
       </Badge>
     )
   }
   if (type === 'error_rate') {
     return (
-      <Badge variant="secondary" className="font-mono">
+      <Badge variant="secondary">
         {value}%
       </Badge>
     )
@@ -53,7 +53,7 @@ export function AlertListRow({ alert, originalIndex, onSelect }: AlertListRowPro
           )}
           <ThresholdBadge alert={alert} />
           {alert.close_violations_on_expiration && (
-            <Badge variant={'outline'} className='bg-green-100 text-green-500'>LOS</Badge>
+            <Badge variant={'outline'}>LOS</Badge>
           )}
         </ItemTitle>
         <ItemDescription>

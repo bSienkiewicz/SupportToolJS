@@ -24,7 +24,9 @@
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
     "release:mac": "dotenv -e .env -- sh -c 'CSC_IDENTITY_AUTO_DISCOVERY=false npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --publish always'",
-    "release:win": "dotenv -e .env -- sh -c 'npm run build && electron-builder --win --publish always'"
+    "release:win": "dotenv -e .env -- sh -c 'npm run build && electron-builder --win --publish always'",
+    "release:ci:mac": "npm run build && electron-builder --mac --publish always",
+    "release:ci:win": "npm run build && electron-builder --win --publish always"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

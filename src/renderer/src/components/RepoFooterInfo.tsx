@@ -455,7 +455,7 @@ export function RepoFooterInfo() {
               <Input
                 value={newBranchName}
                 onChange={(e) => setNewBranchName(e.target.value)}
-                placeholder="feature/my-branch"
+                placeholder="CET-xxxxx"
                 className="font-mono"
               />
             </Field>

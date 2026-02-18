@@ -210,7 +210,7 @@ export function EditAlertDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden min-w-0"
+        className="max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden min-w-0 sm:max-w-4xl"
       >
         <DialogHeader className="p-6 shrink-0 min-w-0 pb-4 border-b">
           <DialogTitle className="truncate pr-8">

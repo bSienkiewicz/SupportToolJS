@@ -26,9 +26,17 @@ import {
 } from './newRelicHelper'
 const APP_DATA_FILE = 'app-data.json'
 
+interface WindowBounds {
+  width: number
+  height: number
+  x?: number
+  y?: number
+}
+
 interface AppData {
   dataDir?: string
   config?: Record<string, string>
+  windowBounds?: WindowBounds
 }
 
 function getAppDataPath(): string {
@@ -51,11 +59,20 @@ function writeAppData(data: AppData): void {
   writeFileSync(getAppDataPath(), JSON.stringify(data, null, 2), 'utf-8')
 }
 
+const DEFAULT_WINDOW_WIDTH = 900
+const DEFAULT_WINDOW_HEIGHT = 670
+
 function createWindow(): void {
-  // Create the browser window.
+  const bounds = readAppData().windowBounds
+  const width = bounds?.width ?? DEFAULT_WINDOW_WIDTH
+  const height = bounds?.height ?? DEFAULT_WINDOW_HEIGHT
+  const x = bounds?.x
+  const y = bounds?.y
+
   const win = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width,
+    height,
+    ...(x != null && y != null ? { x, y } : {}),
     show: false,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
@@ -65,6 +82,15 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
+  })
+
+  win.on('close', () => {
+    const b = win.getBounds()
+    const data = readAppData()
+    writeAppData({
+      ...data,
+      windowBounds: { width: b.width, height: b.height, x: b.x, y: b.y }
+    })
   })
 
   win.on('ready-to-show', () => {

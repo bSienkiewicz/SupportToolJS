@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -15,14 +16,18 @@ type Props = {
 }
 
 const Navigation = ({ currentPage, onPageChange }: Props) => {
+  const [openValue, setOpenValue] = useState('')
+
   return (
     <nav className="w-full p-2">
-      <NavigationMenu>
+      <NavigationMenu value={openValue} onValueChange={setOpenValue}>
         <NavigationMenuList className="gap-1">
           {NAV.map((item) =>
             'submenus' in item && item.submenus.length > 0 ? (
-              <NavigationMenuItem key={item.path}>
+              <NavigationMenuItem key={item.path} value={item.path}>
                 <NavigationMenuTrigger
+                  onPointerMove={(e) => e.preventDefault()}
+                  onPointerLeave={(e) => e.preventDefault()}
                   className={cn(
                     (currentPage === item.path ||
                       item.submenus.some((s) => s.path === currentPage)) &&
@@ -31,7 +36,10 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                 >
                   {item.label}
                 </NavigationMenuTrigger>
-                <NavigationMenuContent>
+                <NavigationMenuContent
+                  onPointerMove={(e) => e.preventDefault()}
+                  onPointerLeave={(e) => e.preventDefault()}
+                >
                   <ul className="grid w-96 gap-1">
                     {item.submenus.map((sub) => (
                       <li key={sub.path}>
@@ -42,7 +50,10 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                             currentPage === sub.path &&
                               'bg-accent text-accent-foreground'
                           )}
-                          onClick={() => onPageChange(sub.path)}
+                          onClick={() => {
+                          onPageChange(sub.path)
+                          setOpenValue('')
+                        }}
                         >
                           <div className="flex flex-col gap-1 items-start">
                             {sub.label}

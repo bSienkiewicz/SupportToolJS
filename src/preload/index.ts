@@ -38,6 +38,7 @@ const api = {
     }>,
   openUrl: (url: string) => ipcRenderer.invoke('app:openUrl', url) as Promise<void>,
   getReleasesUrl: () => ipcRenderer.invoke('app:getReleasesUrl') as Promise<string>,
+  resetSettings: () => ipcRenderer.invoke('app:resetSettings') as Promise<void>,
 }
 
 if (process.contextIsolated) {

@@ -37,6 +37,7 @@ export interface AppAPI {
   }>
   openUrl: (url: string) => Promise<void>
   getReleasesUrl: () => Promise<string>
+  resetSettings: () => Promise<void>
 }
 
 declare global {

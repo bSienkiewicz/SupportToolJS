@@ -1,9 +1,9 @@
 {
-  "name": "supporttooljs",
+  "name": "SupportTool",
   "version": "1.0.3",
-  "description": "An Electron application with React and TypeScript",
+  "description": ":jasperkiss:",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "bsienkiewicz",
   "homepage": "https://github.com/bSienkiewicz/SupportToolJS#readme",
   "repository": {
     "type": "git",

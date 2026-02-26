@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Button } from './components/ui/button'
 import { Input } from './components/ui/input'
 import { toast } from 'sonner'
+import { Separator } from './components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './components/ui/dialog'
 
 const API_KEY_PREFIX = 'NRAK-'
 const API_KEY_LENGTH = 32
@@ -21,6 +23,7 @@ const SettingsPage = () => {
       downloadUrl: string | null
     } | null>(null)
     const [releasesUrl, setReleasesUrl] = useState<string>('')
+    const [resetSettingsOpen, setResetSettingsOpen] = useState(false)
 
     const load = (): void => {
         window.api.getDataDir().then(setDataDir)
@@ -111,6 +114,13 @@ const SettingsPage = () => {
         })
     }
 
+    const resetSettings = (): void => {
+        window.api.resetSettings()
+        toast.success('Settings reset')
+        load()
+        setResetSettingsOpen(false)
+    }
+
     return (
         <div className="p-6 space-y-8">
             <section className="space-y-2">
@@ -147,7 +157,7 @@ const SettingsPage = () => {
                     )}
                 </div>
             </section>
-
+            <Separator />
             <section className="space-y-2">
                 <h2 className="text-sm font-medium text-muted-foreground">Data directory</h2>
                 <p className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">
@@ -157,7 +167,7 @@ const SettingsPage = () => {
             </section>
 
             <section className="space-y-2">
-                <h2 className="text-sm font-medium text-muted-foreground">API Key</h2>
+                <h2 className="text-sm font-medium text-muted-foreground">New Relic API Key</h2>
                 <div className="flex gap-2 flex-wrap">
                     <Input
                         type="text"
@@ -172,6 +182,27 @@ const SettingsPage = () => {
                 <p className="text-xs text-muted-foreground">
                     Must start with NRAK- and be {API_KEY_LENGTH} characters long.
                 </p>
+            </section>
+            <Separator />
+            <section className="space-y-2">
+                <h2 className="text-sm font-medium text-muted-foreground">Reset settings</h2>
+                <Dialog open={resetSettingsOpen} onOpenChange={setResetSettingsOpen}>
+                    <DialogTrigger asChild>
+                    <Button variant="destructive">Reset settings</Button>
+                    </DialogTrigger>
+                    <DialogContent showCloseButton={true}>
+                        <DialogHeader>
+                            <DialogTitle>Reset settings</DialogTitle>
+                            <DialogDescription>
+                                This will reset all settings to their default values.
+                            </DialogDescription>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setResetSettingsOpen(false)}>Cancel</Button>
+                                <Button variant="destructive" onClick={resetSettings}>Reset</Button>
+                            </DialogFooter>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
             </section>
         </div>
     )

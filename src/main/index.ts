@@ -507,6 +507,13 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('app:getReleasesUrl', () => GITHUB_RELEASES_PAGE)
 
+  ipcMain.handle('app:resetSettings', () => {
+    const data = readAppData()
+    data.config = {}
+    delete data.dataDir
+    writeAppData(data)
+  })
+
   createWindow()
 
   app.on('activate', function () {

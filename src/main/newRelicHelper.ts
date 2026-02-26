@@ -11,7 +11,7 @@ const ACCOUNT_ID = 400_000
 export function getApiKey(config: Record<string, string> | undefined): string {
   const apiKey = config?.apiKey ?? process.env['NEW_RELIC_API_KEY']
   if (!apiKey?.trim()) {
-    throw new Error('API key not found. Set it in Settings (apiKey) or NEW_RELIC_API_KEY env.')
+    throw new Error("API key not found. Set it in Settings under 'New Relic API Key'.")
   }
   return apiKey.trim()
 }

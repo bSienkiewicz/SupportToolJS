@@ -337,12 +337,12 @@ const AlertAudit = () => {
       />
       <div className="min-h-0 flex-1 overflow-auto">
         {!selectedStack && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm py-2 px-4 bg-blue-100/50 text-blue-800 rounded mt-3">
             Select a stack above, then click Fetch Data.
           </p>
         )}
         {error && (
-          <p className="text-sm text-destructive" role="alert">
+          <p className="text-sm text-destructive py-2 px-4 bg-red-100/50 rounded mt-3" role="alert">
             {error}
           </p>
         )}

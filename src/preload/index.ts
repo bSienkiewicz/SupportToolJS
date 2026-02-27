@@ -44,8 +44,6 @@ const api = {
     ipcRenderer.invoke('app:getNRAlertsForStack', stack) as Promise<GetNRAlertsForStackResult>,
   loadAllAlerts: () =>
     ipcRenderer.invoke('app:loadAllAlerts') as Promise<LoadAllAlertsResult>,
-  getAlertsCache: () =>
-    ipcRenderer.invoke('app:getAlertsCache') as Promise<Map<string, NrAlert[]>>,
   searchAlertsCache: (query: string) =>
     ipcRenderer.invoke('app:searchAlertsCache', query) as Promise<SearchAlertsCacheResult>,
   saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) =>

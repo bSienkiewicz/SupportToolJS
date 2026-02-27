@@ -364,8 +364,6 @@ app.whenReady().then(() => {
     }
   )
 
-  ipcMain.handle('app:getAlertsCache', () => alertsCache)
-
   ipcMain.handle(
     'app:searchAlertsCache',
     (_e, query: string): { results: { stack: string; alerts: NrAlert[] }[] } => {

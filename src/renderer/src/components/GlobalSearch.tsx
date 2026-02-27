@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
 import { Button } from './ui/button'
 import { Kbd, KbdGroup } from './ui/kbd'
-import { getNavCommandItems } from '../routes'
 import type { NrAlert } from '@/types/alerts'
+import { EditAlertDialog } from './EditAlertDialog'
 
 const SEARCH_DEBOUNCE_MS = 150
 
@@ -11,10 +11,11 @@ type Props = {
   onPageChange: (path: string) => void
 }
 
-const GlobalSearch = ({ onPageChange }: Props) => {
+const GlobalSearch = (_props: Props) => {
   const [open, setOpen] = useState(false)
   const [modifierKey, setModifierKey] = useState<string>('⌘')
   const [searchResults, setSearchResults] = useState<{ stack: string; alerts: NrAlert[] }[]>([])
+  const [selectedForEdit, setSelectedForEdit] = useState<{ stack: string; alert: NrAlert } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -34,24 +35,10 @@ const GlobalSearch = ({ onPageChange }: Props) => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const itemsByGroup = useMemo(() => {
-    const items = getNavCommandItems()
-    const map = new Map<string, typeof items>()
-    for (const item of items) {
-      const list = map.get(item.group) ?? []
-      list.push(item)
-      map.set(item.group, list)
-    }
-    return map
+  const handleAlertSelect = useCallback((stack: string, alert: NrAlert) => {
+    setSelectedForEdit({ stack, alert })
+    setOpen(false)
   }, [])
-
-  const handleSelect = useCallback(
-    (path: string) => {
-      onPageChange(path)
-      setOpen(false)
-    },
-    [onPageChange]
-  )
 
   const handleSearchValueChange = useCallback((value: string) => {
     const query = value.trim()
@@ -95,14 +82,14 @@ const GlobalSearch = ({ onPageChange }: Props) => {
             return (
               <CommandGroup key={result.stack} heading={result.stack.toUpperCase()}>
                 {result.alerts.map((alert) => (
-                  <CommandItem key={alert.name} value={alert.name} onSelect={() => handleSelect(alert.name)}>
+                  <CommandItem key={`${result.stack}:${alert.name}`} value={alert.name} onSelect={() => handleAlertSelect(result.stack, alert)}>
                     {alert.name}
                   </CommandItem>
                 ))}
               </CommandGroup>
             )
           })}
-          {Array.from(itemsByGroup.entries()).map(([group, groupItems]) => (
+          {/* {Array.from(itemsByGroup.entries()).map(([group, groupItems]) => (
             <CommandGroup key={group} heading={group}>
               {groupItems.map((item) => (
                 <CommandItem
@@ -114,9 +101,17 @@ const GlobalSearch = ({ onPageChange }: Props) => {
                 </CommandItem>
               ))}
             </CommandGroup>
-          ))}
+          ))} */}
         </CommandList>
       </CommandDialog>
+      {selectedForEdit && (
+        <EditAlertDialog
+          open={true}
+          onOpenChange={(open) => !open && setSelectedForEdit(null)}
+          stack={selectedForEdit.stack}
+          alert={selectedForEdit.alert}
+        />
+      )}
     </>
   )
 }

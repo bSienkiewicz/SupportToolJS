@@ -53,12 +53,11 @@ import { Spinner } from './ui/spinner'
 export type EditAlertDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Stack this alert belongs to (required for save/delete). */
+  stack: string
   alert: NrAlert
-  alertIndex: number
-  onSave: (index: number, patch: NrAlert) => void | Promise<void>
-  onRequestDelete: (index: number, name: string) => void
-  /** Stack name for recalculating print duration threshold (e.g. from Alert Management). */
-  selectedStack?: string | null
+  /** Called after successful save or delete so the parent can refresh (e.g. Alert Management list). */
+  onSaved?: () => void
 }
 
 const SAMPLING_DAYS = 7
@@ -85,17 +84,17 @@ function getOtherFieldLabel(key: string): string {
 export function EditAlertDialog({
   open,
   onOpenChange,
+  stack,
   alert,
-  alertIndex,
-  onSave,
-  onRequestDelete,
-  selectedStack: selectedStackProp,
+  onSaved,
 }: EditAlertDialogProps) {
   const [localAlert, setLocalAlert] = useState<NrAlert>(alert)
   const [showChangelog, setShowChangelog] = useState(false)
   const [suggestedThreshold, setSuggestedThreshold] = useState<number | null>(null)
   const [recalcLoading, setRecalcLoading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const originalSnapshotRef = useRef<NrAlert>(alert)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
@@ -110,6 +109,7 @@ export function EditAlertDialog({
       originalSnapshotRef.current = { ...alert }
       setShowChangelog(false)
       setSuggestedThreshold(null)
+      setConfirmDelete(false)
     }
   }, [open, alert])
 
@@ -145,23 +145,44 @@ export function EditAlertDialog({
   const handleConfirmSave = useCallback(async () => {
     setSaveLoading(true)
     try {
-      await Promise.resolve(onSave(alertIndex, localAlert))
+      let result = await window.api.getNRAlertsForStack(stack)
+      if (result.error === 'cache_not_loaded') {
+        await window.api.loadAllAlerts()
+        result = await window.api.getNRAlertsForStack(stack)
+      }
+      if (result.error || !result.alerts) {
+        toast.error(result.error ?? 'Failed to load alerts')
+        return
+      }
+      const originalName = originalSnapshotRef.current.name
+      const idx = result.alerts.findIndex((a) => a.name === originalName)
+      const newAlerts = [...result.alerts]
+      if (idx === -1) {
+        newAlerts.push(localAlert)
+      } else {
+        newAlerts[idx] = localAlert
+      }
+      const saveResult = await window.api.saveNRAlertsForStack(stack, newAlerts)
+      if (!saveResult.ok) {
+        toast.error(saveResult.error ?? 'Failed to save')
+        return
+      }
       setShowChangelog(false)
       onOpenChange(false)
+      onSaved?.()
       toast.success('Alert saved')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save')
     } finally {
       setSaveLoading(false)
     }
-  }, [alertIndex, localAlert, onSave, onOpenChange])
+  }, [stack, localAlert, onOpenChange, onSaved])
 
   const handleCancelChangelog = useCallback(() => {
     setShowChangelog(false)
   }, [])
 
   const handleRecalculateThreshold = useCallback(async () => {
-    const stack = selectedStackProp ?? await window.api.getConfigValue('selectedStack')
     if (!stack?.trim()) {
       toast.error('No stack selected')
       return
@@ -191,7 +212,7 @@ export function EditAlertDialog({
     } finally {
       setRecalcLoading(false)
     }
-  }, [carrierName, selectedStackProp])
+  }, [carrierName, stack])
 
   const handleApplySuggestedThreshold = useCallback(() => {
     if (suggestedThreshold == null) return
@@ -199,10 +220,39 @@ export function EditAlertDialog({
     setSuggestedThreshold(null)
   }, [suggestedThreshold, updateLocal])
 
-  const handleDelete = useCallback(() => {
-    onOpenChange(false)
-    onRequestDelete(alertIndex, localAlert.name)
-  }, [alertIndex, localAlert.name, onOpenChange, onRequestDelete])
+  const handleDeleteClick = useCallback(() => {
+    setConfirmDelete(true)
+  }, [])
+
+  const handleDeleteConfirm = useCallback(async () => {
+    setDeleteLoading(true)
+    try {
+      let result = await window.api.getNRAlertsForStack(stack)
+      if (result.error === 'cache_not_loaded') {
+        await window.api.loadAllAlerts()
+        result = await window.api.getNRAlertsForStack(stack)
+      }
+      if (result.error || !result.alerts) {
+        toast.error(result.error ?? 'Failed to load alerts')
+        return
+      }
+      const originalName = originalSnapshotRef.current.name
+      const newAlerts = result.alerts.filter((a) => a.name !== originalName)
+      const saveResult = await window.api.saveNRAlertsForStack(stack, newAlerts)
+      if (!saveResult.ok) {
+        toast.error(saveResult.error ?? 'Failed to delete')
+        return
+      }
+      setConfirmDelete(false)
+      onOpenChange(false)
+      onSaved?.()
+      toast.success('Alert deleted')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }, [stack, onOpenChange, onSaved])
 
   const invalid = isAlertInvalid(localAlert)
 
@@ -466,22 +516,22 @@ export function EditAlertDialog({
               </Field>
               <Field orientation="horizontal">
                 <FieldContent>
-                  <FieldLabel htmlFor={`enabled-dialog-${alertIndex}`}>Enabled</FieldLabel>
+                  <FieldLabel htmlFor={`enabled-dialog-${localAlert.name}`}>Enabled</FieldLabel>
                 </FieldContent>
                 <Switch
-                  id={`enabled-dialog-${alertIndex}`}
+                  id={`enabled-dialog-${localAlert.name}`}
                   checked={localAlert.enabled}
                   onCheckedChange={(checked) => updateLocal({ enabled: checked })}
                 />
               </Field>
               <Field orientation="horizontal">
                 <FieldContent>
-                  <FieldLabel htmlFor={`close-violations-dialog-${alertIndex}`}>
+                  <FieldLabel htmlFor={`close-violations-dialog-${localAlert.name}`}>
                     Close violations on expiration
                   </FieldLabel>
                 </FieldContent>
                 <Switch
-                  id={`close-violations-dialog-${alertIndex}`}
+                  id={`close-violations-dialog-${localAlert.name}`}
                   checked={!!localAlert.close_violations_on_expiration}
                   onCheckedChange={(checked) =>
                     updateLocal({ close_violations_on_expiration: checked })
@@ -523,10 +573,10 @@ export function EditAlertDialog({
                       return (
                         <Field key={key} orientation="horizontal">
                           <FieldContent>
-                            <FieldLabel htmlFor={`other-${key}-${alertIndex}`}>{label}</FieldLabel>
+                            <FieldLabel htmlFor={`other-${key}-${localAlert.name}`}>{label}</FieldLabel>
                           </FieldContent>
                           <Switch
-                            id={`other-${key}-${alertIndex}`}
+                            id={`other-${key}-${localAlert.name}`}
                             checked={value}
                             onCheckedChange={(checked) => updateLocal({ [key]: checked })}
                           />
@@ -591,12 +641,26 @@ export function EditAlertDialog({
         </div>
 
         <DialogFooter className="p-6 pt-4 border-t flex-row justify-between sm:justify-between shrink-0 min-w-0">
-          <Button variant="destructive" size="sm" onClick={handleDelete}>
-            <LucideTrash2 />
-            Delete alert
-          </Button>
+          {confirmDelete ? (
+            <>
+              <span className="text-sm text-muted-foreground self-center">Delete this alert?</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)} disabled={deleteLoading}>
+                  Cancel
+                </Button>
+                <Button size="sm" variant="destructive" onClick={handleDeleteConfirm} disabled={deleteLoading}>
+                  {deleteLoading ? <Spinner className="size-4" /> : 'Delete'}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Button variant="destructive" size="sm" onClick={handleDeleteClick}>
+              <LucideTrash2 />
+              Delete alert
+            </Button>
+          )}
           <div className="flex gap-2">
-            {!showChangelog && (
+            {!showChangelog && !confirmDelete && (
               <Button
                 size="sm"
                 onClick={handleSaveClick}

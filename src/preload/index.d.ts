@@ -31,7 +31,6 @@ export interface AppAPI {
   getNRStacks: () => Promise<string[]>
   getNRAlertsForStack: (stack: string) => Promise<GetNRAlertsForStackResult>
   loadAllAlerts: () => Promise<LoadAllAlertsResult>
-  getAlertsCache: () => Promise<Map<string, NrAlert[]>>
   searchAlertsCache: (query: string) => Promise<import('@/types/api').SearchAlertsCacheResult>
   saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) => Promise<SaveNRAlertsForStackResult>
   executeNrql: (nrqlQuery: string) => Promise<ExecuteNrqlResult>

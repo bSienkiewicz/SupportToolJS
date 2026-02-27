@@ -4,23 +4,13 @@ import { AlertListRow } from '../../../components/AlertListRow'
 import { EditAlertDialog } from '../../../components/EditAlertDialog'
 import type { NrAlert } from '../../../../../types/alerts'
 import { newAlertTemplate, type AlertChange } from '../alertUtils'
-import { Button } from '@/renderer/src/components/ui/button'
 import { useFooter } from '@/renderer/src/context/FooterContext'
 import { RepoFooterInfo } from '@/renderer/src/components/RepoFooterInfo'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/renderer/src/components/ui/dialog'
 import { Spinner } from '../../../components/ui/spinner'
 import { toast } from 'sonner'
 
 const AlertManagement = () => {
   const [changedAlerts, setChangedAlerts] = useState<AlertChange[]>([])
-  const [alertToDelete, setAlertToDelete] = useState<{ index: number; name: string } | null>(null)
   const { setFooter } = useFooter()
   const [selectedStack, setSelectedStack] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
@@ -74,46 +64,6 @@ const AlertManagement = () => {
     if (selectedStack) loadAlerts(selectedStack, { clearFirst: true })
   }, [selectedStack, loadAlerts])
 
-  const saveAlertFromDialog = useCallback(
-    (index: number, updated: NrAlert): Promise<void> => {
-      const newAlerts = alerts.map((a, i) => (i === index ? updated : a))
-      if (!selectedStack) {
-        setAlerts(newAlerts)
-        setChangedAlerts((prev) => {
-          const hasModifyOrAdd = prev.some(
-            (c) => (c.type === 'modify' || c.type === 'add') && c.index === index
-          )
-          if (hasModifyOrAdd) return prev
-          return [...prev, { type: 'modify', index }]
-        })
-        return Promise.resolve()
-      }
-      return window.api
-        .saveNRAlertsForStack(selectedStack, newAlerts)
-        .then((result) => {
-          if (result.ok) {
-            setAlerts(newAlerts)
-            setChangedAlerts((prev) => {
-              const hasModifyOrAdd = prev.some(
-                (c) => (c.type === 'modify' || c.type === 'add') && c.index === index
-              )
-              if (hasModifyOrAdd) return prev
-              return [...prev, { type: 'modify', index }]
-            })
-            return
-          }
-          const msg =
-            result.error === 'block_not_found'
-              ? 'nr_nrql_alerts block not found in file'
-              : result.error === 'no_data_dir'
-                ? 'No data directory set'
-                : result.error ?? 'Failed to save to file'
-          return Promise.reject(new Error(msg))
-        })
-    },
-    [alerts, selectedStack]
-  )
-
   const handleRefetch = useCallback(async () => {
     setLoading(true)
     try {
@@ -133,34 +83,6 @@ const AlertManagement = () => {
     setChangedAlerts((prev) => [...prev, { type: 'add', index: newIndex }])
     setEditingAlertIndex(newIndex)
   }, [alerts.length])
-
-  const requestDeleteAlert = useCallback((index: number, name: string) => {
-    setAlertToDelete({ index, name })
-  }, [])
-
-  const confirmDeleteAlert = useCallback(() => {
-    if (!alertToDelete) return
-    const { index, name } = alertToDelete
-    setAlerts((prev) => prev.filter((_, i) => i !== index))
-    setChangedAlerts((prev) => {
-      const next: AlertChange[] = prev
-        .filter(
-          (c) =>
-            (c.type !== 'modify' && c.type !== 'add') || c.index !== index
-        )
-        .map((c) => {
-          if (c.type === 'modify' || c.type === 'add') {
-            if (c.index > index) return { ...c, index: c.index - 1 }
-          }
-          return c
-        })
-      return [...next, { type: 'delete', name }]
-    })
-    setAlertToDelete(null)
-    setEditingAlertIndex((i) =>
-      i === index ? null : i != null && i > index ? i - 1 : i
-    )
-  }, [alertToDelete])
 
   useEffect(() => {
     setFooter(
@@ -216,41 +138,15 @@ const AlertManagement = () => {
         </div>
       </div>
 
-      {editingAlert != null && editingAlertIndex != null && (
+      {editingAlert != null && selectedStack && (
         <EditAlertDialog
-          open={editingAlertIndex !== null}
+          open={true}
           onOpenChange={(open) => !open && setEditingAlertIndex(null)}
+          stack={selectedStack}
           alert={editingAlert}
-          alertIndex={editingAlertIndex}
-          onSave={saveAlertFromDialog}
-          onRequestDelete={requestDeleteAlert}
-          selectedStack={selectedStack}
+          onSaved={() => loadAlerts(selectedStack)}
         />
       )}
-
-
-      <Dialog open={!!alertToDelete} onOpenChange={(open) => !open && setAlertToDelete(null)}>
-        <DialogContent showCloseButton={true}>
-          <DialogHeader>
-            <DialogTitle>Delete alert</DialogTitle>
-            <DialogDescription>
-              Delete alert &quot;{alertToDelete?.name}&quot;? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter showCloseButton={false}>
-            <Button
-              variant="outline"
-              onClick={() => setAlertToDelete(null)}
-              size="sm"
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDeleteAlert} size="sm">
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

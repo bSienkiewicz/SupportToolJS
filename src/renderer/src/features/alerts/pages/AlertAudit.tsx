@@ -106,7 +106,11 @@ const AlertAudit = () => {
   }, [selectedStack, fetchData])
 
   async function calculateMissingAlerts(stack: string, carriers: string[]) {
-    const result: GetNRAlertsForStackResult = await window.api.getNRAlertsForStack(stack)
+    let result: GetNRAlertsForStackResult = await window.api.getNRAlertsForStack(stack)
+    if (result.error === 'cache_not_loaded') {
+      await window.api.loadAllAlerts()
+      result = await window.api.getNRAlertsForStack(stack)
+    }
     const computed = computeAlertPresence(result, carriers)
     if (!computed) {
       toast.error(result.error ?? 'Failed to load alerts')

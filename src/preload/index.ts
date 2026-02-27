@@ -39,6 +39,8 @@ const api = {
   getNRStacks: () => ipcRenderer.invoke('app:getNRStacks') as Promise<string[]>,
   getNRAlertsForStack: (stack: string) =>
     ipcRenderer.invoke('app:getNRAlertsForStack', stack) as Promise<GetNRAlertsForStackResult>,
+  loadAllAlerts: () =>
+    ipcRenderer.invoke('app:loadAllAlerts') as Promise<import('@/types/api').LoadAllAlertsResult>,
   saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) =>
     ipcRenderer.invoke(
       'app:saveNRAlertsForStack',

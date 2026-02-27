@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/renderer/src/components/ui/dialog'
 import { Spinner } from '../../../components/ui/spinner'
+import { toast } from 'sonner'
 
 const AlertManagement = () => {
   const [changedAlerts, setChangedAlerts] = useState<AlertChange[]>([])
@@ -44,24 +45,27 @@ const AlertManagement = () => {
   }, [])
 
   const loadAlerts = useCallback(
-    (stack: string, options?: { clearFirst?: boolean; onDone?: () => void }) => {
+    async (stack: string, options?: { clearFirst?: boolean; onDone?: () => void; toastId?: string }) => {
       setLoading(true)
       if (options?.clearFirst) {
         setAlerts([])
         setSearch('')
       }
-      window.api
-        .getNRAlertsForStack(stack)
-        .then((result) => {
-          setAlerts(result.alerts)
-          setChangedAlerts([])
-          setEditingAlertIndex(null)
-          options?.onDone?.()
-        })
-        .catch(() => {
-          setAlerts([])
-        })
-        .finally(() => setLoading(false))
+      try {
+        let result = await window.api.getNRAlertsForStack(stack)
+        if (result.error === 'cache_not_loaded') {
+          await window.api.loadAllAlerts()
+          result = await window.api.getNRAlertsForStack(stack)
+        }
+        setAlerts(result.alerts)
+        setChangedAlerts([])
+        setEditingAlertIndex(null)
+        options?.onDone?.()
+      } catch {
+        setAlerts([])
+      } finally {
+        setLoading(false)
+      }
     },
     []
   )
@@ -110,8 +114,17 @@ const AlertManagement = () => {
     [alerts, selectedStack]
   )
 
-  const handleRefetch = useCallback(() => {
-    if (selectedStack) loadAlerts(selectedStack, { clearFirst: true })
+  const handleRefetch = useCallback(async () => {
+    setLoading(true)
+    try {
+      const result = await window.api.loadAllAlerts()
+      if (result.ok && selectedStack) loadAlerts(selectedStack, { clearFirst: true })
+      if (!result.ok) toast.error('Failed to rebuild alerts cache')
+    } catch {
+      toast.error('Failed to rebuild alerts cache')
+    } finally {
+      setLoading(false)
+    }
   }, [selectedStack, loadAlerts])
 
   const handleAddAlert = useCallback(() => {

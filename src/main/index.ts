@@ -8,6 +8,7 @@ import {
   statSync,
   readdirSync,
 } from 'fs'
+import { readFile, readdir } from 'fs/promises'
 import { execSync, spawnSync } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -329,6 +330,40 @@ app.whenReady().then(() => {
 
   // Get NR stacks
   const STACKS_PATH = 'metaform/mpm/copies/production/prd/eu-west-1'
+
+  /** In-memory cache: stack name -> alerts. Filled by loadAllAlerts, read by getNRAlertsForStack, updated on save. */
+  const alertsCache = new Map<string, NrAlert[]>()
+
+  ipcMain.handle(
+    'app:loadAllAlerts',
+    async (): Promise<{ ok: boolean; stacksLoaded?: number; error?: 'no_data_dir' }> => {
+      const dataDir = getDataDir()
+      if (!dataDir) return { ok: false, error: 'no_data_dir' }
+      const stacksDir = join(dataDir, STACKS_PATH)
+      let dirs: string[]
+      try {
+        const entries = await readdir(stacksDir, { withFileTypes: true })
+        dirs = entries.filter((d) => d.isDirectory()).map((d) => d.name)
+      } catch {
+        return { ok: true, stacksLoaded: 0 }
+      }
+      alertsCache.clear()
+      let loaded = 0
+      for (const stack of dirs) {
+        const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
+        try {
+          const content = await readFile(filePath, 'utf-8')
+          const parsed = parseNrNrqlAlerts(content)
+          alertsCache.set(stack, parsed ? parsed.alerts : [])
+        } catch {
+          alertsCache.set(stack, [])
+        }
+        loaded++
+      }
+      return { ok: true, stacksLoaded: loaded }
+    }
+  )
+
   ipcMain.handle('app:getNRStacks', () => {
     const dataDir = getDataDir()
     if (!dataDir) return []
@@ -339,19 +374,14 @@ app.whenReady().then(() => {
       .map((d) => d.name)
   })
 
-  // Get NR alerts for stack (hcl2-parser only)
+  // Get NR alerts for stack from cache only (no file read)
   ipcMain.handle('app:getNRAlertsForStack', (_e, stack: string) => {
     const dataDir = getDataDir()
     if (!dataDir)
       return { alerts: [], error: 'no_data_dir' as const }
-    const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
-    if (!existsSync(filePath))
-      return { alerts: [], error: 'file_not_found' as const }
-    const content = readFileSync(filePath, 'utf-8')
-    const parsed = parseNrNrqlAlerts(content)
-    if (!parsed)
-      return { alerts: [], error: 'parse_failed' as const }
-    return { alerts: parsed.alerts, error: null }
+    if (!alertsCache.has(stack))
+      return { alerts: [], error: 'cache_not_loaded' as const }
+    return { alerts: alertsCache.get(stack) ?? [], error: null }
   })
 
   ipcMain.handle(
@@ -382,6 +412,7 @@ app.whenReady().then(() => {
       } catch {
         return { ok: false, error: 'write_failed' as const }
       }
+      alertsCache.set(stack, alerts)
       return { ok: true }
     }
   )

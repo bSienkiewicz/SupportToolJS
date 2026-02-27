@@ -45,6 +45,10 @@ const GlobalSearch = ({ onPageChange }: Props) => {
     setOpen(false)
   }
 
+  const handleSearchValueChange = (value: string) => {
+    console.log(value)
+  }
+
   return (
     <>
       <Button variant="outline" onClick={() => setOpen(true)} className="w-44 flex items-center justify-between p-2">
@@ -55,7 +59,7 @@ const GlobalSearch = ({ onPageChange }: Props) => {
         </KbdGroup>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search navigation..." />
+        <CommandInput placeholder="Search..." onValueChange={handleSearchValueChange} />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {Array.from(itemsByGroup.entries()).map(([group, groupItems]) => (

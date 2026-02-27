@@ -38,10 +38,17 @@ export interface GitUncommittedChangesResult {
   files: GitUncommittedFile[]
 }
 
-/** Result of getNRAlertsForStack: alerts from file for a stack, or error code. */
+/** Result of getNRAlertsForStack: alerts from cache for a stack, or error code. */
 export interface GetNRAlertsForStackResult {
   alerts: NrAlert[]
-  error: 'no_data_dir' | 'file_not_found' | 'parse_failed' | null
+  error: 'no_data_dir' | 'file_not_found' | 'parse_failed' | 'cache_not_loaded' | null
+}
+
+/** Result of loadAllAlerts: loads all stack alerts into the in-memory cache. */
+export interface LoadAllAlertsResult {
+  ok: boolean
+  stacksLoaded?: number
+  error?: 'no_data_dir'
 }
 
 /** Result of saveNRAlertsForStack. */

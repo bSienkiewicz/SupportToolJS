@@ -292,7 +292,11 @@ export async function addMissingAlerts(
   alertPresence: Presence[]
 ): Promise<AddMissingAlertsResult> {
   if (!stack) return { addedNames: [], saved: false }
-  const result = await window.api.getNRAlertsForStack(stack)
+  let result = await window.api.getNRAlertsForStack(stack)
+  if (result.error === 'cache_not_loaded') {
+    await window.api.loadAllAlerts()
+    result = await window.api.getNRAlertsForStack(stack)
+  }
   if (result.error) {
     toast.error(result.error)
     return { addedNames: [], saved: false }
@@ -381,7 +385,11 @@ export async function applyPrintDurationThresholds(
   selectedCarriers: Set<string>,
   proposedThresholds: Record<string, number>
 ): Promise<ApplyPrintDurationThresholdsResult> {
-  const result = await window.api.getNRAlertsForStack(stack)
+  let result = await window.api.getNRAlertsForStack(stack)
+  if (result.error === 'cache_not_loaded') {
+    await window.api.loadAllAlerts()
+    result = await window.api.getNRAlertsForStack(stack)
+  }
   if (result.error) {
     toast.error(result.error)
     return { updatedCount: 0, saved: false }

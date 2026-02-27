@@ -16,6 +16,13 @@ function App(): React.JSX.Element {
     if (window.location.hash.slice(1) !== path) window.location.hash = path
   }, [])
 
+  // Load all stack alerts into main-process cache on app open (async, only when data dir is set).
+  useEffect(() => {
+    window.api.getDataDir().then((dir) => {
+      if (dir) void window.api.loadAllAlerts().catch(() => {})
+    })
+  }, [])
+
   useEffect(() => {
     const onHashChange = (): void => setPage(getPathFromHash())
     window.addEventListener('hashchange', onHashChange)

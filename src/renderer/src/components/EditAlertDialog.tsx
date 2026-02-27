@@ -568,7 +568,7 @@ export function EditAlertDialog({
               <p className="text-sm font-medium">Changelog</p>
               <ul className="text-sm space-y-1.5 list-none min-w-0 overflow-hidden">
                 {changelog.map((item) => (
-                  <li key={item.field} className="flex flex-wrap gap-1 min-w-0 break-words">
+                  <li key={item.field} className="flex flex-wrap gap-1 min-w-0 wrap-break-word">
                     <span className="font-medium shrink-0">{item.label}:</span>
                     <span className="text-muted-foreground line-through break-all min-w-0">
                       {item.from}

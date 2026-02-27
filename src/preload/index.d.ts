@@ -3,7 +3,8 @@ import type {
   NrAlert,
   GetNRAlertsForStackResult,
   SaveNRAlertsForStackResult,
-  ExecuteNrqlResult
+  ExecuteNrqlResult,
+  LoadAllAlertsResult
 } from '@/types/api'
 
 export type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, ExecuteNrqlResult }
@@ -29,7 +30,9 @@ export interface AppAPI {
   setConfigValue: (key: string, value: string) => Promise<void>
   getNRStacks: () => Promise<string[]>
   getNRAlertsForStack: (stack: string) => Promise<GetNRAlertsForStackResult>
-  loadAllAlerts: () => Promise<import('@/types/api').LoadAllAlertsResult>
+  loadAllAlerts: () => Promise<LoadAllAlertsResult>
+  getAlertsCache: () => Promise<Map<string, NrAlert[]>>
+  searchAlertsCache: (query: string) => Promise<import('@/types/api').SearchAlertsCacheResult>
   saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) => Promise<SaveNRAlertsForStackResult>
   executeNrql: (nrqlQuery: string) => Promise<ExecuteNrqlResult>
   checkForUpdate: () => Promise<{

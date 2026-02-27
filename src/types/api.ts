@@ -58,6 +58,11 @@ export interface SaveNRAlertsForStackResult {
   error?: 'no_data_dir' | 'file_not_found' | 'block_not_found' | 'write_failed'
 }
 
+/** Result of searchAlertsCache: filtered alerts by stack (only matches, small payload). */
+export interface SearchAlertsCacheResult {
+  results: { stack: string; alerts: NrAlert[] }[]
+}
+
 /** Result of executeNrql (NRQL query via New Relic GraphQL). */
 export interface ExecuteNrqlResult {
   data: unknown[] | null

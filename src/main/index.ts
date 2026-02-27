@@ -364,6 +364,24 @@ app.whenReady().then(() => {
     }
   )
 
+  ipcMain.handle('app:getAlertsCache', () => alertsCache)
+
+  ipcMain.handle(
+    'app:searchAlertsCache',
+    (_e, query: string): { results: { stack: string; alerts: NrAlert[] }[] } => {
+      const searchLower = (query ?? '').trim().toLowerCase()
+      if (!searchLower) return { results: [] }
+      const results: { stack: string; alerts: NrAlert[] }[] = []
+      for (const [stack, alerts] of alertsCache.entries()) {
+        const filtered = (alerts ?? []).filter((a) =>
+          (a.name ?? '').toLowerCase().includes(searchLower)
+        )
+        if (filtered.length > 0) results.push({ stack, alerts: filtered })
+      }
+      return { results }
+    }
+  )
+
   ipcMain.handle('app:getNRStacks', () => {
     const dataDir = getDataDir()
     if (!dataDir) return []

@@ -4,7 +4,10 @@ import type {
   NrAlert,
   GetNRAlertsForStackResult,
   SaveNRAlertsForStackResult,
-  ExecuteNrqlResult
+  ExecuteNrqlResult,
+  SearchAlertsCacheResult,
+  LoadAllAlertsResult,
+  GitOpResult
 } from '@/types/api'
 
 const api = {
@@ -27,9 +30,9 @@ const api = {
       import('@/types/api').GitUncommittedChangesResult
     >,
   gitDiscardAll: () =>
-    ipcRenderer.invoke('app:gitDiscardAll') as Promise<import('@/types/api').GitOpResult>,
+    ipcRenderer.invoke('app:gitDiscardAll') as Promise<GitOpResult>,
   gitDiscardFile: (path: string) =>
-    ipcRenderer.invoke('app:gitDiscardFile', path) as Promise<import('@/types/api').GitOpResult>,
+    ipcRenderer.invoke('app:gitDiscardFile', path) as Promise<GitOpResult>,
   pickDataDir: () => ipcRenderer.invoke('app:pickDataDir') as Promise<string | null>,
   getConfig: () => ipcRenderer.invoke('app:getConfig') as Promise<Record<string, string>>,
   getConfigValue: (key: string) =>
@@ -40,7 +43,11 @@ const api = {
   getNRAlertsForStack: (stack: string) =>
     ipcRenderer.invoke('app:getNRAlertsForStack', stack) as Promise<GetNRAlertsForStackResult>,
   loadAllAlerts: () =>
-    ipcRenderer.invoke('app:loadAllAlerts') as Promise<import('@/types/api').LoadAllAlertsResult>,
+    ipcRenderer.invoke('app:loadAllAlerts') as Promise<LoadAllAlertsResult>,
+  getAlertsCache: () =>
+    ipcRenderer.invoke('app:getAlertsCache') as Promise<Map<string, NrAlert[]>>,
+  searchAlertsCache: (query: string) =>
+    ipcRenderer.invoke('app:searchAlertsCache', query) as Promise<SearchAlertsCacheResult>,
   saveNRAlertsForStack: (stack: string, alerts: NrAlert[]) =>
     ipcRenderer.invoke(
       'app:saveNRAlertsForStack',

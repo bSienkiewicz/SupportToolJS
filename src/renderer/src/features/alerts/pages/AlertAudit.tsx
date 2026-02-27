@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import AlertHeader from '@/renderer/src/components/Header'
+import AlertHeader from '@/renderer/src/features/alerts/components/Header'
 import type { GetNRAlertsForStackResult } from '@/types/api'
 import { Button } from '@/renderer/src/components/ui/button'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
@@ -335,19 +335,19 @@ const AlertAudit = () => {
         onRefetch={fetchData}
         onAddAlert={handleAddMissingAlerts}
       />
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto p-4">
         {!selectedStack && (
-          <p className="text-sm py-2 px-4 bg-blue-100/50 text-blue-800 rounded mt-3">
+          <p className="text-sm py-2 px-4 bg-blue-100/50 text-blue-800 rounded">
             Select a stack above, then click Fetch Data.
           </p>
         )}
         {error && (
-          <p className="text-sm text-destructive py-2 px-4 bg-red-100/50 rounded mt-3" role="alert">
+          <p className="text-sm text-destructive py-2 px-4 bg-red-100/50 rounded" role="alert">
             {error}
           </p>
         )}
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-4">
             <ButtonGroup>
               <Button onClick={fetchData} disabled={loading} size="xs">
                 {loading ? (
@@ -360,7 +360,7 @@ const AlertAudit = () => {
                 )}
               </Button>
             </ButtonGroup>
-            <p className="text-xs text-muted-foreground my-3 ml-auto">
+            <p className="text-xs text-muted-foreground ml-auto">
               {carrierNames.length} carrier{carrierNames.length !== 1 ? 's' : ''}
             </p>
           </div>

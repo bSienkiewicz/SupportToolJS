@@ -6,6 +6,7 @@ import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { cn } from '@/renderer/lib/utils'
 import { Button } from '@/renderer/src/components/ui/button'
 import { Separator } from '@/renderer/src/components/ui/separator'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/renderer/src/components/ui/resizable'
 
 type Tab = 'REPRINT' | 'CREATE_CONSIGNMENT'
 
@@ -22,10 +23,10 @@ const ReprintPage = () => {
   }
 
   return (
-    <div className="">
+    <div className="flex flex-col h-full">
       <Header />
-      <div className="grid grid-cols-[1fr_auto_300px] gap-4">
-        <div className="w-full p-4 pr-0">
+      <ResizablePanelGroup className='flex-1 h-full'>
+        <ResizablePanel className='p-4 overflow-auto' minSize={300}>
           <div className="flex justify-between">
             <Select value={selectedTab} onValueChange={handleSelectTab}>
               <SelectTrigger>
@@ -42,6 +43,7 @@ const ReprintPage = () => {
                 className="relative">
                 <Button
                     type="button"
+                    size="xs"
                     variant="outline"
                     className={cn(requestType === 'rest' ? 'bg-accent' : '', 'text-xs')}
                     onClick={() => handleChangeRequestType('rest')}
@@ -50,6 +52,7 @@ const ReprintPage = () => {
                 </Button>
                 <Button
                     type="button"
+                    size="xs"
                     variant="outline"
                     className={cn(requestType === 'soap' ? 'bg-accent' : '', 'text-xs')}
                     onClick={() => handleChangeRequestType('soap')}
@@ -59,18 +62,16 @@ const ReprintPage = () => {
             </ButtonGroup>
           </div>
           <div className="mt-2">
-            {selectedTab === 'REPRINT' && <FormReprint />}
+            {selectedTab === 'REPRINT' && <FormReprint requestType={requestType} />}
           </div>
-        </div>
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
 
-        <Separator orientation="vertical" />
-
-        <div className="w-full p-4 pl-0">
-          <div className="flex flex-col">
-            <Button>Create user</Button>
-          </div>
-        </div>
-      </div>
+        <ResizablePanel className='p-4' minSize={300}>
+          
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   )
 }

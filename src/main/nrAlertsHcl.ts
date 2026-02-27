@@ -10,12 +10,7 @@ const BLOCK_KEY = 'nr_nrql_alerts'
 const BLOCK_START = 'nr_nrql_alerts = ['
 
 /** Find matching closing bracket, skipping content inside quoted strings. */
-function findMatchingBracket(
-  content: string,
-  openAt: number,
-  open: string,
-  close: string
-): number {
+function findMatchingBracket(content: string, openAt: number, open: string, close: string): number {
   let depth = 1
   let i = openAt + 1
   let inString = false
@@ -52,9 +47,7 @@ function findMatchingBracket(
 const BLOCK_START_PATTERN = /nr_nrql_alerts\s*=\s*\[/
 
 /** Locate nr_nrql_alerts = [ ... ] (or nr_nrql_alerts=[) and return range (for replace on save). */
-export function getBlockRange(
-  content: string
-): { start: number; end: number } | null {
+export function getBlockRange(content: string): { start: number; end: number } | null {
   const match = content.match(BLOCK_START_PATTERN)
   if (!match || match.index === undefined) return null
   const blockStartIndex = match.index
@@ -200,7 +193,7 @@ const ALERT_KEY_ORDER = [
   'fill_value',
   'title_template',
   'ignore_on_expected_termination',
-  'policy_id',
+  'policy_id'
 ] as const
 
 const ORDERED_KEYS_SET = new Set(ALERT_KEY_ORDER)
@@ -231,8 +224,7 @@ function serializeAlert(alert: NrAlert): string {
   }
   const rest = Object.entries(alert).filter(
     ([k]) =>
-      !ORDERED_KEYS_SET.has(k as (typeof ALERT_KEY_ORDER)[number]) &&
-      !shouldOmitKey(alert, k)
+      !ORDERED_KEYS_SET.has(k as (typeof ALERT_KEY_ORDER)[number]) && !shouldOmitKey(alert, k)
   )
   const lines = [...ordered, ...rest].map(([k, v]) => {
     const key = `"${k.replace(/"/g, '\\"')}"`
@@ -252,9 +244,5 @@ export function replaceNrNrqlAlerts(
   blockStart: number,
   blockEnd: number
 ): string {
-  return (
-    content.slice(0, blockStart) +
-    serializeNrNrqlAlerts(alerts) +
-    content.slice(blockEnd)
-  )
+  return content.slice(0, blockStart) + serializeNrNrqlAlerts(alerts) + content.slice(blockEnd)
 }

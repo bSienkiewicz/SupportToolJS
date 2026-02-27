@@ -34,9 +34,12 @@ interface WindowBounds {
 }
 
 interface AppData {
-  dataDir?: string
   config?: Record<string, string>
   windowBounds?: WindowBounds
+}
+
+function getDataDir(): string | null {
+  return readAppData().config?.dataDir ?? null
 }
 
 function getAppDataPath(): string {
@@ -131,11 +134,11 @@ app.whenReady().then(() => {
   ipcMain.handle('app:getVersion', () => app.getVersion())
 
   // Get data directory
-  ipcMain.handle('app:getDataDir', () => readAppData().dataDir ?? null)
+  ipcMain.handle('app:getDataDir', () => getDataDir())
 
   // Git repo info for data directory (branch when repo, else just path)
   ipcMain.handle('app:getGitRepoInfo', (): { branch: string | null; dataDir: string | null } => {
-    const dataDir = readAppData().dataDir ?? null
+    const dataDir = getDataDir()
     if (!dataDir) return { branch: null, dataDir: null }
     const gitDir = join(dataDir, '.git')
     if (!existsSync(gitDir) || !statSync(gitDir, { throwIfNoEntry: false })?.isDirectory()) {
@@ -154,7 +157,7 @@ app.whenReady().then(() => {
 
   // Git branches list (local) and current branch
   ipcMain.handle('app:getGitBranches', (): { branches: string[]; current: string | null } => {
-    const dataDir = readAppData().dataDir ?? null
+    const dataDir = getDataDir()
     if (!dataDir) return { branches: [], current: null }
     const gitDir = join(dataDir, '.git')
     if (!existsSync(gitDir) || !statSync(gitDir, { throwIfNoEntry: false })?.isDirectory()) {
@@ -181,7 +184,7 @@ app.whenReady().then(() => {
 
   // Git checkout branch
   ipcMain.handle('app:gitCheckout', async (_e, branch: string): Promise<{ ok: boolean; error: string | null }> => {
-    const dataDir = readAppData().dataDir ?? null
+    const dataDir = getDataDir()
     if (!dataDir) return { ok: false, error: 'No data directory' }
     const r = spawnSync('git', ['checkout', branch], { encoding: 'utf-8', cwd: dataDir })
     if (r.status !== 0) {
@@ -194,7 +197,7 @@ app.whenReady().then(() => {
   ipcMain.handle(
     'app:gitCreateBranch',
     async (_e, newName: string, fromBranch: string): Promise<{ ok: boolean; error: string | null }> => {
-      const dataDir = readAppData().dataDir ?? null
+      const dataDir = getDataDir()
       if (!dataDir) return { ok: false, error: 'No data directory' }
       const r = spawnSync('git', ['checkout', '-b', newName, fromBranch], {
         encoding: 'utf-8',
@@ -209,7 +212,7 @@ app.whenReady().then(() => {
 
   // Git pull
   ipcMain.handle('app:gitPull', async (): Promise<{ ok: boolean; error: string | null }> => {
-    const dataDir = readAppData().dataDir ?? null
+    const dataDir = getDataDir()
     if (!dataDir) return { ok: false, error: 'No data directory' }
     const r = spawnSync('git', ['pull'], { encoding: 'utf-8', cwd: dataDir })
     if (r.status !== 0) {
@@ -222,7 +225,7 @@ app.whenReady().then(() => {
   ipcMain.handle(
     'app:getGitUncommittedChanges',
     (): { files: { path: string; fullPath: string; added: number; deleted: number; status: string }[] } => {
-      const dataDir = readAppData().dataDir ?? null
+      const dataDir = getDataDir()
       if (!dataDir) return { files: [] }
       const gitDir = join(dataDir, '.git')
       if (!existsSync(gitDir) || !statSync(gitDir, { throwIfNoEntry: false })?.isDirectory()) {
@@ -258,7 +261,7 @@ app.whenReady().then(() => {
 
   // Git discard all uncommitted changes (reset --hard HEAD)
   ipcMain.handle('app:gitDiscardAll', async (): Promise<{ ok: boolean; error: string | null }> => {
-    const dataDir = readAppData().dataDir ?? null
+    const dataDir = getDataDir()
     if (!dataDir) return { ok: false, error: 'No data directory' }
     const r = spawnSync('git', ['reset', '--hard', 'HEAD'], { encoding: 'utf-8', cwd: dataDir })
     if (r.status !== 0) {
@@ -271,7 +274,7 @@ app.whenReady().then(() => {
   ipcMain.handle(
     'app:gitDiscardFile',
     async (_e, path: string): Promise<{ ok: boolean; error: string | null }> => {
-      const dataDir = readAppData().dataDir ?? null
+      const dataDir = getDataDir()
       if (!dataDir) return { ok: false, error: 'No data directory' }
       if (!path || typeof path !== 'string') return { ok: false, error: 'Invalid path' }
       const r = spawnSync('git', ['checkout', '--', path], { encoding: 'utf-8', cwd: dataDir })
@@ -304,7 +307,8 @@ app.whenReady().then(() => {
       return null
     }
     const data = readAppData()
-    data.dataDir = dir
+    if (!data.config) data.config = {}
+    data.config.dataDir = dir
     writeAppData(data)
     return dir
   })
@@ -324,7 +328,7 @@ app.whenReady().then(() => {
   // Get NR stacks
   const STACKS_PATH = 'metaform/mpm/copies/production/prd/eu-west-1'
   ipcMain.handle('app:getNRStacks', () => {
-    const dataDir = readAppData().dataDir
+    const dataDir = getDataDir()
     if (!dataDir) return []
     const stacksDir = join(dataDir, STACKS_PATH)
     if (!existsSync(stacksDir)) return []
@@ -335,7 +339,7 @@ app.whenReady().then(() => {
 
   // Get NR alerts for stack (hcl2-parser only)
   ipcMain.handle('app:getNRAlertsForStack', (_e, stack: string) => {
-    const dataDir = readAppData().dataDir
+    const dataDir = getDataDir()
     if (!dataDir)
       return { alerts: [], error: 'no_data_dir' as const }
     const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
@@ -351,7 +355,7 @@ app.whenReady().then(() => {
   ipcMain.handle(
     'app:saveNRAlertsForStack',
     (_e, stack: string, alerts: NrAlert[]) => {
-      const dataDir = readAppData().dataDir
+      const dataDir = getDataDir()
       if (!dataDir) return { ok: false, error: 'no_data_dir' as const }
       const filePath = join(dataDir, STACKS_PATH, stack, 'auto.tfvars')
       if (!existsSync(filePath)) return { ok: false, error: 'file_not_found' as const }
@@ -510,7 +514,6 @@ app.whenReady().then(() => {
   ipcMain.handle('app:resetSettings', () => {
     const data = readAppData()
     data.config = {}
-    delete data.dataDir
     writeAppData(data)
   })
 

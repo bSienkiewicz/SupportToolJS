@@ -9,6 +9,8 @@ import {
 } from '@/renderer/src/components/ui/navigation-menu'
 import { cn } from 'src/renderer/lib/utils'
 import { NAV } from '../routes'
+import { Button } from '../components/ui/button'
+import { LucideSettings } from 'lucide-react'
 
 type Props = {
   currentPage: string
@@ -19,9 +21,9 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
   const [openValue, setOpenValue] = useState('')
 
   return (
-    <nav className="w-full p-2">
-      <NavigationMenu value={openValue} onValueChange={setOpenValue}>
-        <NavigationMenuList className="gap-1">
+    <nav className="w-full p-2 flex items-center gap-1">
+      <NavigationMenu value={openValue} onValueChange={setOpenValue} className="flex-1 max-w-none justify-start">
+        <NavigationMenuList className="flex w-full gap-1">
           {NAV.map((item) =>
             'submenus' in item && item.submenus.length > 0 ? (
               <NavigationMenuItem key={item.path} value={item.path}>
@@ -51,9 +53,9 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                               'bg-accent text-accent-foreground'
                           )}
                           onClick={() => {
-                          onPageChange(sub.path)
-                          setOpenValue('')
-                        }}
+                            onPageChange(sub.path)
+                            setOpenValue('')
+                          }}
                         >
                           <div className="flex flex-col gap-1 items-start">
                             {sub.label}
@@ -65,24 +67,22 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
-            ) : (
-              <NavigationMenuItem key={item.path}>
-                <button
-                  type="button"
-                  className={cn(
-                    navigationMenuTriggerStyle(),
-                    currentPage === item.path &&
-                      'bg-accent text-accent-foreground'
-                  )}
-                  onClick={() => onPageChange(item.path)}
-                >
-                  {item.label}
-                </button>
-              </NavigationMenuItem>
-            )
+            ) : null
           )}
         </NavigationMenuList>
       </NavigationMenu>
+      <Button
+        variant="outline"
+        className={cn(
+          navigationMenuTriggerStyle(),
+          currentPage === '/settings' && 'bg-accent text-accent-foreground'
+        )}
+        onClick={() => onPageChange('/settings')}
+      >
+        <LucideSettings
+          className="size-4"
+        />
+      </Button>
     </nav>
   )
 }

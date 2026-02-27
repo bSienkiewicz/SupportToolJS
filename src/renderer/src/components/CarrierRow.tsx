@@ -13,7 +13,7 @@ const CarrierRow = memo(function CarrierRow({
   checked,
   onToggle,
   proposedThreshold,
-  onProposedThresholdChange,
+  onProposedThresholdChange
 }: {
   name: string
   presence: Presence
@@ -43,7 +43,12 @@ const CarrierRow = memo(function CarrierRow({
   )
 
   const handleCopyConfirmationNrql = useCallback(async () => {
-    const nrql = await buildConfirmationNrql(name, presence.printDurationThreshold, proposedPrintDurationThreshold, 7)
+    const nrql = await buildConfirmationNrql(
+      name,
+      presence.printDurationThreshold,
+      proposedPrintDurationThreshold,
+      7
+    )
     navigator.clipboard.writeText(nrql)
     toast.success('Confirmation NRQL copied to clipboard')
   }, [name, presence.printDurationThreshold, proposedPrintDurationThreshold])
@@ -107,14 +112,18 @@ const CarrierRow = memo(function CarrierRow({
               </InputGroupAddon>
             </InputGroup>
             <span>
-              {presence.printDurationThreshold != null && proposedPrintDurationThreshold !== '' && !isNaN(Number(proposedPrintDurationThreshold)) ? (
-                <span className={`text-xs ${(() => {
-                  const current = Number(presence.printDurationThreshold)
-                  const proposed = Number(proposedPrintDurationThreshold)
-                  const diff = proposed - current
-                  if (!isFinite(diff) || diff === 0) return "text-muted-foreground"
-                  return Math.abs(diff) > 2 ? "text-red-500" : "text-muted-foreground"
-                })()}`}>
+              {presence.printDurationThreshold != null &&
+              proposedPrintDurationThreshold !== '' &&
+              !isNaN(Number(proposedPrintDurationThreshold)) ? (
+                <span
+                  className={`text-xs ${(() => {
+                    const current = Number(presence.printDurationThreshold)
+                    const proposed = Number(proposedPrintDurationThreshold)
+                    const diff = proposed - current
+                    if (!isFinite(diff) || diff === 0) return 'text-muted-foreground'
+                    return Math.abs(diff) > 2 ? 'text-red-500' : 'text-muted-foreground'
+                  })()}`}
+                >
                   {(() => {
                     const current = Number(presence.printDurationThreshold)
                     const proposed = Number(proposedPrintDurationThreshold)
@@ -123,7 +132,8 @@ const CarrierRow = memo(function CarrierRow({
                     const sign = diff > 0 ? '+' : ''
                     return (
                       <span>
-                        ({sign}{diff % 1 === 0 ? diff : diff.toFixed(2)} s)
+                        ({sign}
+                        {diff % 1 === 0 ? diff : diff.toFixed(2)} s)
                       </span>
                     )
                   })()}
@@ -137,9 +147,11 @@ const CarrierRow = memo(function CarrierRow({
         )}
       </TableCell>
       <TableCell onClick={stopPropagation}>
-        <Button variant={'outline'} size={'xs'} onClick={() => handleCopyConfirmationNrql()}>
-          <LucideCopy />
-        </Button>
+        {presence.printDuration && presence.errorRate && (
+          <Button variant={'outline'} size={'xs'} onClick={() => handleCopyConfirmationNrql()}>
+            <LucideCopy />
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   )

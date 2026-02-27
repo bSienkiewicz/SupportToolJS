@@ -5,10 +5,7 @@ import { tokenizeNrql } from '../features/alerts/nrqlSyntax'
 const baseClasses =
   'border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm font-mono'
 
-type NrqlHighlightedTextareaProps = Omit<
-  React.ComponentProps<'textarea'>,
-  'className'
-> & {
+type NrqlHighlightedTextareaProps = Omit<React.ComponentProps<'textarea'>, 'className'> & {
   className?: string
 }
 
@@ -21,10 +18,7 @@ export function NrqlHighlightedTextarea({
   const mirrorRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const tokens = React.useMemo(
-    () => tokenizeNrql(String(value)),
-    [value]
-  )
+  const tokens = React.useMemo(() => tokenizeNrql(String(value)), [value])
 
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     if (mirrorRef.current) {

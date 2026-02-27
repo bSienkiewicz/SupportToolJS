@@ -6,7 +6,7 @@ import {
   LucideCheck,
   LucideArrowDownToLine,
   LucideFileEdit,
-  LucideTrash2,
+  LucideTrash2
 } from 'lucide-react'
 import { Button } from '@/renderer/src/components/ui/button'
 import {
@@ -15,7 +15,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList,
+  CommandList
 } from '@/renderer/src/components/ui/command'
 import {
   Dialog,
@@ -23,7 +23,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/renderer/src/components/ui/dialog'
 import { Field, FieldLabel } from '@/renderer/src/components/ui/field'
 import { Input } from '@/renderer/src/components/ui/input'
@@ -32,7 +32,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/renderer/src/components/ui/select'
 import { toast } from 'sonner'
 
@@ -77,9 +77,7 @@ export function RepoFooterInfo() {
       setBranches(r.branches)
       setCurrentBranch(r.current)
       setCreateFromBranch((prev) =>
-        r.branches.length > 0 && !r.branches.includes(prev)
-          ? defaultBaseBranch(r.branches)
-          : prev
+        r.branches.length > 0 && !r.branches.includes(prev) ? defaultBaseBranch(r.branches) : prev
       )
     })
   }, [])
@@ -150,9 +148,7 @@ export function RepoFooterInfo() {
 
   useEffect(() => {
     if (createDialogOpen && branches.length > 0) {
-      setCreateFromBranch((prev) =>
-        branches.includes(prev) ? prev : defaultBaseBranch(branches)
-      )
+      setCreateFromBranch((prev) => (branches.includes(prev) ? prev : defaultBaseBranch(branches)))
     }
   }, [createDialogOpen, branches])
 
@@ -245,18 +241,17 @@ export function RepoFooterInfo() {
 
   if (!info) return null
   if (!info.dataDir) {
-    return (
-      <span className="text-muted-foreground text-xs">
-        No data directory
-      </span>
-    )
+    return <span className="text-muted-foreground text-xs">No data directory</span>
   }
 
   const hasBranch = info.branch != null && info.branch !== ''
 
   return (
     <>
-      <div className="text-muted-foreground text-xs font-mono flex items-center gap-1.5" title={info.dataDir}>
+      <div
+        className="text-muted-foreground text-xs font-mono flex items-center gap-1.5"
+        title={info.dataDir}
+      >
         {hasBranch ? (
           <>
             <Button
@@ -285,8 +280,7 @@ export function RepoFooterInfo() {
               aria-label="Uncommitted changes"
             >
               <LucideFileEdit className="size-3.5 shrink-0" />
-              <span className="text-foreground/80">{uncommittedFiles.length}
-              </span>
+              <span className="text-foreground/80">{uncommittedFiles.length}</span>
             </Button>
           </>
         ) : null}
@@ -342,29 +336,29 @@ export function RepoFooterInfo() {
         <CommandList>
           <CommandEmpty>No changed files.</CommandEmpty>
           {uncommittedFiles.length > 0 && (
-          <CommandGroup heading="Changed files">
-            {uncommittedFiles.map((file) => (
-              <CommandItem
-                key={file.fullPath}
-                value={`${breadcrumbLabel(file.path)} ${file.path}`}
-                onSelect={() => {}}
-              >
-                <span className="truncate flex-1 font-mono text-xs">
-                  {breadcrumbLabel(file.path)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="shrink-0 h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => handleDiscardFile(file.path, e)}
-                  disabled={discardingPath === file.path}
-                  aria-label={`Discard ${breadcrumbLabel(file.path)}`}
+            <CommandGroup heading="Changed files">
+              {uncommittedFiles.map((file) => (
+                <CommandItem
+                  key={file.fullPath}
+                  value={`${breadcrumbLabel(file.path)} ${file.path}`}
+                  onSelect={() => {}}
                 >
-                  <LucideTrash2 className="size-3.5" />
-                </Button>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+                  <span className="truncate flex-1 font-mono text-xs">
+                    {breadcrumbLabel(file.path)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="shrink-0 h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => handleDiscardFile(file.path, e)}
+                    disabled={discardingPath === file.path}
+                    aria-label={`Discard ${breadcrumbLabel(file.path)}`}
+                  >
+                    <LucideTrash2 className="size-3.5" />
+                  </Button>
+                </CommandItem>
+              ))}
+            </CommandGroup>
           )}
         </CommandList>
         <div className="border-t px-2 py-2">
@@ -427,7 +421,8 @@ export function RepoFooterInfo() {
           <DialogHeader>
             <DialogTitle>Create new branch</DialogTitle>
             <DialogDescription>
-              Create a new branch from an existing one. You will switch to the new branch after creation.
+              Create a new branch from an existing one. You will switch to the new branch after
+              creation.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
@@ -461,16 +456,10 @@ export function RepoFooterInfo() {
             </Field>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCreateDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleCreateBranch}
-              disabled={!newBranchName.trim() || createLoading}
-            >
+            <Button onClick={handleCreateBranch} disabled={!newBranchName.trim() || createLoading}>
               {createLoading ? 'Creating…' : 'Create branch'}
             </Button>
           </DialogFooter>

@@ -4,11 +4,45 @@
  */
 
 const NRQL_KEYWORDS = new Set([
-  'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'LIKE', 'AS', 'ON',
-  'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'GROUP', 'BY', 'ORDER', 'LIMIT',
-  'OFFSET', 'SINCE', 'UNTIL', 'WITH', 'TIMEZONE', 'COMPARE', 'FACET',
-  'PERCENTILE', 'AVERAGE', 'COUNT', 'PERCENTAGE', 'SUM', 'MIN', 'MAX', 'UNIQUES',
-  'DAYS', 'AGO', 'HOURS', 'MINUTES', 'SECONDS',
+  'SELECT',
+  'FROM',
+  'WHERE',
+  'AND',
+  'OR',
+  'NOT',
+  'IN',
+  'LIKE',
+  'AS',
+  'ON',
+  'JOIN',
+  'LEFT',
+  'RIGHT',
+  'INNER',
+  'OUTER',
+  'GROUP',
+  'BY',
+  'ORDER',
+  'LIMIT',
+  'OFFSET',
+  'SINCE',
+  'UNTIL',
+  'WITH',
+  'TIMEZONE',
+  'COMPARE',
+  'FACET',
+  'PERCENTILE',
+  'AVERAGE',
+  'COUNT',
+  'PERCENTAGE',
+  'SUM',
+  'MIN',
+  'MAX',
+  'UNIQUES',
+  'DAYS',
+  'AGO',
+  'HOURS',
+  'MINUTES',
+  'SECONDS'
 ])
 
 export type NrqlTokenType = 'keyword' | 'string' | 'plain'
@@ -47,7 +81,7 @@ export function tokenizeNrql(text: string): NrqlToken[] {
       const isKeyword = NRQL_KEYWORDS.has(key)
       tokens.push({
         type: isKeyword ? 'keyword' : 'plain',
-        value: word[0],
+        value: word[0]
       })
       i += word[0].length
       continue

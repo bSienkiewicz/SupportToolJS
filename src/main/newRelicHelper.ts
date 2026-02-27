@@ -32,9 +32,9 @@ export async function executeGraphQLQuery<T = unknown>(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Api-Key': apiKey,
+      'X-Api-Key': apiKey
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query })
   })
   const text = await res.text()
   if (!res.ok) {

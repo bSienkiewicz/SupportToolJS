@@ -1,12 +1,32 @@
-export type NrAlertAggregationMethod = "CADENCE" | "EVENT_FLOW" | "EVENT_TIMER";
-export type NrAlertSeverity = "CRITICAL" | "WARNING";
-export type NrAlertCriticalOperatior = "ABOVE" | "ABOVE_OR_EQUALS" | "BELOW" | "BELOW_OR_EQUALS" | "EQUALS" | "NOT_EQUALS";
-export type NrAlertCriticalThresholdOccurrences = "ALL" | "AT_LEAST_ONCE";
+export type NrAlertAggregationMethod = 'CADENCE' | 'EVENT_FLOW' | 'EVENT_TIMER'
+export type NrAlertSeverity = 'CRITICAL' | 'WARNING'
+export type NrAlertCriticalOperatior =
+  | 'ABOVE'
+  | 'ABOVE_OR_EQUALS'
+  | 'BELOW'
+  | 'BELOW_OR_EQUALS'
+  | 'EQUALS'
+  | 'NOT_EQUALS'
+export type NrAlertCriticalThresholdOccurrences = 'ALL' | 'AT_LEAST_ONCE'
 
-export const SEVERITY_OPTIONS: NrAlertSeverity[] = ["CRITICAL", "WARNING"];
-export const AGGREGATION_METHOD_OPTIONS: NrAlertAggregationMethod[] = ["CADENCE", "EVENT_FLOW", "EVENT_TIMER"];
-export const CRITICAL_OPERATOR_OPTIONS: NrAlertCriticalOperatior[] = ["ABOVE", "ABOVE_OR_EQUALS", "BELOW", "BELOW_OR_EQUALS", "EQUALS", "NOT_EQUALS"];
-export const CRITICAL_THRESHOLD_OCCURRENCES_OPTIONS: NrAlertCriticalThresholdOccurrences[] = ["ALL", "AT_LEAST_ONCE"];
+export const SEVERITY_OPTIONS: NrAlertSeverity[] = ['CRITICAL', 'WARNING']
+export const AGGREGATION_METHOD_OPTIONS: NrAlertAggregationMethod[] = [
+  'CADENCE',
+  'EVENT_FLOW',
+  'EVENT_TIMER'
+]
+export const CRITICAL_OPERATOR_OPTIONS: NrAlertCriticalOperatior[] = [
+  'ABOVE',
+  'ABOVE_OR_EQUALS',
+  'BELOW',
+  'BELOW_OR_EQUALS',
+  'EQUALS',
+  'NOT_EQUALS'
+]
+export const CRITICAL_THRESHOLD_OCCURRENCES_OPTIONS: NrAlertCriticalThresholdOccurrences[] = [
+  'ALL',
+  'AT_LEAST_ONCE'
+]
 
 export interface NrAlert {
   name: string

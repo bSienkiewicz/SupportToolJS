@@ -12,12 +12,9 @@ const NAV = [
       { key: 'ALERTS_AUDIT', label: 'Alert Maintenance', path: '/alerts-audit', description: 'Find missing alerts and readjust thresholds' },
     ],
   },
-  {
-    key: 'SETTINGS',
-    label: 'Settings',
-    path: '/settings',
-  },
 ] as const
+
+const SETTINGS_PATH = '/settings'
 
 export { NAV }
 
@@ -29,6 +26,7 @@ function collectPaths(): string[] {
       for (const sub of item.submenus) paths.push(sub.path)
     }
   }
+  paths.push(SETTINGS_PATH)
   return paths
 }
 
@@ -44,6 +42,7 @@ for (const item of NAV) {
     ROUTES_BUILD[item.key] = item.path
   }
 }
+ROUTES_BUILD['SETTINGS'] = SETTINGS_PATH
 export const ROUTES = ROUTES_BUILD as {
   ALERTS: '/alerts'
   ALERTS_MANAGEMENT: '/alerts-management'

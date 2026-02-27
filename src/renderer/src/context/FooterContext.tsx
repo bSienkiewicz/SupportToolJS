@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 
 type FooterContextValue = {
   content: ReactNode
@@ -16,11 +10,7 @@ const FooterContext = createContext<FooterContextValue | null>(null)
 export function FooterProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<ReactNode>(null)
   const setFooter = useCallback((next: ReactNode) => setContent(next), [])
-  return (
-    <FooterContext.Provider value={{ content, setFooter }}>
-      {children}
-    </FooterContext.Provider>
-  )
+  return <FooterContext.Provider value={{ content, setFooter }}>{children}</FooterContext.Provider>
 }
 
 export function useFooter() {
@@ -33,9 +23,5 @@ export function useFooter() {
 export function FooterSlot() {
   const { content } = useFooter()
   if (content == null) return null
-  return (
-    <footer className="shrink-0 border-t px-4 py-1 bg-background">
-      {content}
-    </footer>
-  )
+  return <footer className="shrink-0 border-t px-4 py-1 bg-background">{content}</footer>
 }

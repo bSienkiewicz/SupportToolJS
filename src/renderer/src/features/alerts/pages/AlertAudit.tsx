@@ -10,7 +10,7 @@ import {
   TableBody,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/renderer/src/components/ui/table'
 import { Checkbox } from '../../../components/ui/checkbox'
 import { useFooter } from '@/renderer/src/context/FooterContext'
@@ -26,7 +26,7 @@ import {
   parseThresholdStatsResults,
   getPrintDurationProposedConfig,
   calculateSuggestedThreshold,
-  applyPrintDurationThresholds,
+  applyPrintDurationThresholds
 } from '../alertAuditHelpers'
 
 const DEFAULT_PRESENCE: Presence = { name: '', errorRate: false, printDuration: false }
@@ -81,7 +81,7 @@ const AlertAudit = () => {
         toast.info('No carriers found', { id: toastId })
       } else {
         toast.success(`${names.length} carrier${names.length !== 1 ? 's' : ''} loaded`, {
-          id: toastId,
+          id: toastId
         })
         toast.loading('Calculating thresholds…', { id: toastId })
         await calculateMissingAlerts(selectedStack.trim(), names)
@@ -118,9 +118,7 @@ const AlertAudit = () => {
     setAlertPresence(computed.presence)
     setSelectedCarriers(new Set(computed.missingCarriers))
 
-    const withPrintDuration = carriers.filter(
-      (_, i) => computed.presence[i]?.printDuration
-    )
+    const withPrintDuration = carriers.filter((_, i) => computed.presence[i]?.printDuration)
     if (withPrintDuration.length === 0) {
       setProposedThresholds({})
       return
@@ -162,24 +160,31 @@ const AlertAudit = () => {
     })
   }, [carrierNames, presenceByName])
 
-  const toggleCarrierSelection = useCallback((name: string | null, checked: boolean) => {
-    if (name === null) {
-      setSelectedCarriers(checked ? new Set(sortedCarriers) : new Set())
-      return
-    }
-    setSelectedCarriers((prev) => {
-      const next = new Set(prev)
-      if (checked) next.add(name)
-      else next.delete(name)
-      return next
-    })
-  }, [sortedCarriers])
+  const toggleCarrierSelection = useCallback(
+    (name: string | null, checked: boolean) => {
+      if (name === null) {
+        setSelectedCarriers(checked ? new Set(sortedCarriers) : new Set())
+        return
+      }
+      setSelectedCarriers((prev) => {
+        const next = new Set(prev)
+        if (checked) next.add(name)
+        else next.delete(name)
+        return next
+      })
+    },
+    [sortedCarriers]
+  )
 
   const handleAddMissingAlerts = useCallback(async () => {
     if (!selectedStack?.trim() || carrierNames.length === 0) return
     setAddLoading(true)
     try {
-      const { addedNames, saved } = await addMissingAlerts(selectedStack, selectedCarriers, alertPresence)
+      const { addedNames, saved } = await addMissingAlerts(
+        selectedStack,
+        selectedCarriers,
+        alertPresence
+      )
       if (!saved) return
       if (addedNames.length > 0) {
         toast.success(`Added ${addedNames.length} alert${addedNames.length !== 1 ? 's' : ''}`)
@@ -212,7 +217,9 @@ const AlertAudit = () => {
     }
     setSelectedCarriers(new Set(needing))
     if (needing.length > 0) {
-      toast.info(`${needing.length} carrier${needing.length !== 1 ? 's' : ''} need threshold update`)
+      toast.info(
+        `${needing.length} carrier${needing.length !== 1 ? 's' : ''} need threshold update`
+      )
     } else {
       toast.info('No carriers need threshold update')
     }
@@ -252,16 +259,19 @@ const AlertAudit = () => {
     }
   }, [selectedStack, sortedCarriers, selectedCarriers, proposedThresholds, carrierNames])
 
-  const setProposedThresholdForCarrier = useCallback((name: string, value: number | string | '') => {
-    setProposedThresholds((prev) => {
-      if (value === '') {
-        const next = { ...prev }
-        delete next[name]
-        return next
-      }
-      return { ...prev, [name]: value }
-    })
-  }, [])
+  const setProposedThresholdForCarrier = useCallback(
+    (name: string, value: number | string | '') => {
+      setProposedThresholds((prev) => {
+        if (value === '') {
+          const next = { ...prev }
+          delete next[name]
+          return next
+        }
+        return { ...prev, [name]: value }
+      })
+    },
+    []
+  )
 
   const selectAllChecked =
     sortedCarriers.length === 0
@@ -322,7 +332,7 @@ const AlertAudit = () => {
     selectedStack,
     addLoading,
     adjustLoading,
-    proposedThresholds,
+    proposedThresholds
   ])
 
   return (
@@ -331,7 +341,7 @@ const AlertAudit = () => {
         title="Alert Maintenance"
         showItems={[]}
         onChange={setSelectedStack}
-        onSearch={() => { }}
+        onSearch={() => {}}
         onRefetch={fetchData}
         onAddAlert={handleAddMissingAlerts}
       />

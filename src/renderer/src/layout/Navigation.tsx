@@ -4,13 +4,13 @@ import {
   NavigationMenuList,
   NavigationMenuItem,
   NavigationMenuTrigger,
-  NavigationMenuContent,
-  navigationMenuTriggerStyle,
+  NavigationMenuContent
 } from '@/renderer/src/components/ui/navigation-menu'
 import { cn } from 'src/renderer/lib/utils'
 import { NAV } from '../routes'
 import { Button } from '../components/ui/button'
 import { LucideSettings } from 'lucide-react'
+import GlobalSearch from '../components/GlobalSearch'
 
 type Props = {
   currentPage: string
@@ -33,7 +33,7 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                   className={cn(
                     (currentPage === item.path ||
                       item.submenus.some((s) => s.path === currentPage)) &&
-                      'bg-accent text-accent-foreground'
+                    'bg-accent text-accent-foreground'
                   )}
                 >
                   {item.label}
@@ -50,7 +50,7 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                           className={cn(
                             'flex w-full rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer',
                             currentPage === sub.path &&
-                              'bg-accent text-accent-foreground'
+                            'bg-accent text-accent-foreground'
                           )}
                           onClick={() => {
                             onPageChange(sub.path)
@@ -71,18 +71,16 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
           )}
         </NavigationMenuList>
       </NavigationMenu>
-      <Button
-        variant="outline"
-        className={cn(
-          navigationMenuTriggerStyle(),
-          currentPage === '/settings' && 'bg-accent text-accent-foreground'
-        )}
-        onClick={() => onPageChange('/settings')}
-      >
-        <LucideSettings
-          className="size-4"
-        />
-      </Button>
+      <div className='ml-auto flex items-center gap-2'>
+        <GlobalSearch onPageChange={onPageChange} />
+        <Button
+          variant="outline"
+          onClick={() => onPageChange('/settings')}
+        >
+          <LucideSettings
+            className="size-4"
+          />
+        </Button></div>
     </nav>
   )
 }

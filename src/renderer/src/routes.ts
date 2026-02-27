@@ -8,8 +8,8 @@ const NAV = [
     label: 'Alerts',
     path: '/alerts',
     submenus: [
-      { key: 'ALERTS_MANAGEMENT', label: 'Manage Alerts', path: '/alerts-management', description: 'Manage alerts and their properties' },
-      { key: 'ALERTS_AUDIT', label: 'Alert Maintenance', path: '/alerts-audit', description: 'Find missing alerts and readjust thresholds' },
+      { key: 'ALERTS_MANAGEMENT', label: 'Alert Management', path: '/alerts-management', description: 'Manage alerts and their properties' },
+      { key: 'ALERTS_AUDIT', label: 'Alert Audit', path: '/alerts-audit', description: 'Find missing alerts and readjust thresholds' },
     ],
   },
 ] as const
@@ -17,6 +17,23 @@ const NAV = [
 const SETTINGS_PATH = '/settings'
 
 export { NAV }
+
+/** One navigable item for the command palette (and any other nav UI). Derived from NAV + Settings. */
+export type NavCommandItem = { label: string; path: string; group: string }
+
+/** Flat list of nav targets for the command palette. Single source of truth with NAV + Settings. */
+export function getNavCommandItems(): NavCommandItem[] {
+  const items: NavCommandItem[] = []
+  for (const item of NAV) {
+    if ('submenus' in item && item.submenus) {
+      for (const sub of item.submenus) {
+        items.push({ label: sub.label, path: sub.path, group: item.label })
+      }
+    }
+  }
+  items.push({ label: 'Settings', path: SETTINGS_PATH, group: 'App' })
+  return items
+}
 
 function collectPaths(): string[] {
   const paths: string[] = []

@@ -10,6 +10,7 @@ export type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, Ex
 
 export interface AppAPI {
   getVersion: () => Promise<string>
+  getPlatform: () => Promise<NodeJS.Platform>
   getDataDir: () => Promise<string | null>
   getGitRepoInfo: () => Promise<import('@/types/api').GitRepoInfo>
   getGitBranches: () => Promise<import('@/types/api').GitBranchesResult>

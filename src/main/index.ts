@@ -133,6 +133,8 @@ app.whenReady().then(() => {
   // App version (for display and update checks)
   ipcMain.handle('app:getVersion', () => app.getVersion())
 
+  ipcMain.handle('app:getPlatform', () => process.platform)
+
   // Get data directory
   ipcMain.handle('app:getDataDir', () => getDataDir())
 

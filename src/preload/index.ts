@@ -9,6 +9,7 @@ import type {
 
 const api = {
   getVersion: () => ipcRenderer.invoke('app:getVersion') as Promise<string>,
+  getPlatform: () => ipcRenderer.invoke('app:getPlatform') as Promise<NodeJS.Platform>,
   getDataDir: () => ipcRenderer.invoke('app:getDataDir') as Promise<string | null>,
   getGitRepoInfo: () =>
     ipcRenderer.invoke('app:getGitRepoInfo') as Promise<import('@/types/api').GitRepoInfo>,

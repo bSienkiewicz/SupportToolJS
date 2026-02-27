@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Button } from './components/ui/button'
-import { Input } from './components/ui/input'
+import { Button } from '@/renderer/src/components/ui/button'
+import { Input } from '@/renderer/src/components/ui/input'
 import { toast } from 'sonner'
-import { Separator } from './components/ui/separator'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './components/ui/dialog'
+import { Separator } from '@/renderer/src/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/renderer/src/components/ui/dialog'
 
 const API_KEY_PREFIX = 'NRAK-'
 const API_KEY_LENGTH = 32

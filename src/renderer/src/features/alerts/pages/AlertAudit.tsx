@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import AlertHeader from '../../../components/Header'
+import AlertHeader from '@/renderer/src/components/Header'
 import type { GetNRAlertsForStackResult } from '@/types/api'
 import { Button } from '@/renderer/src/components/ui/button'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
-import { Spinner } from '../../../components/ui/spinner'
+import { Spinner } from '@/renderer/src/components/ui/spinner'
 import { toast } from 'sonner'
 import {
   Table,
@@ -12,10 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/renderer/src/components/ui/table'
-import { Checkbox } from '../../../components/ui/checkbox'
+import { Checkbox } from '@/renderer/src/components/ui/checkbox'
 import { useFooter } from '@/renderer/src/context/FooterContext'
-import { RepoFooterInfo } from '@/renderer/src/components/RepoFooterInfo'
-import CarrierRow from '../../../components/CarrierRow'
+import { RepoFooterInfo } from '@/renderer/src/features/alerts/components/RepoFooterInfo'
+import CarrierRow from '@/renderer/src/features/alerts/components/CarrierRow'
 import {
   NRQL_TEMPLATE,
   extractCarrierNames,
@@ -27,7 +27,7 @@ import {
   getPrintDurationProposedConfig,
   calculateSuggestedThreshold,
   applyPrintDurationThresholds,
-} from '../alertAuditHelpers'
+} from '@/renderer/src/features/alerts/alertAuditHelpers'
 
 const DEFAULT_PRESENCE: Presence = { name: '', errorRate: false, printDuration: false }
 

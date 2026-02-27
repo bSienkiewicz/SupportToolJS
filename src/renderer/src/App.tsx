@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Toaster } from './components/ui/sonner'
-import SettingsPage from './SettingsPage'
-import Navigation from './layout/Navigation'
-import { ROUTES, getPathFromHash } from './routes'
-import AlertManagement from './features/alerts/pages/AlertManagement'
-import { FooterProvider, FooterSlot } from './context/FooterContext'
-import AlertAudit from './features/alerts/pages/AlertAudit'
-import { TooltipProvider } from './components/ui/tooltip'
+import { Toaster } from '@/renderer/src/components/ui/sonner'
+import SettingsPage from '@/renderer/src/features/settings/pages/SettingsPage'
+import Navigation from '@/renderer/src/layout/Navigation'
+import { ROUTES, getPathFromHash } from '@/renderer/src/routes'
+import AlertManagement from '@/renderer/src/features/alerts/pages/AlertManagement'
+import { FooterProvider, FooterSlot } from '@/renderer/src/context/FooterContext'
+import AlertAudit from '@/renderer/src/features/alerts/pages/AlertAudit'
+import { TooltipProvider } from '@/renderer/src/components/ui/tooltip'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)

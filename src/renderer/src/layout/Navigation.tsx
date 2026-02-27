@@ -7,30 +7,31 @@ import {
   NavigationMenuContent,
   navigationMenuTriggerStyle,
 } from '@/renderer/src/components/ui/navigation-menu'
-import { cn } from 'src/renderer/lib/utils'
-import { NAV } from '../routes'
+import { cn } from '@/renderer/lib/utils'
+import { NAV, SETTINGS_PATH } from '@/renderer/src/routes'
+import { Button } from '@/renderer/src/components/ui/button'
+import { LucideSettings } from 'lucide-react'
 
 type Props = {
   currentPage: string
-  onPageChange: (page: string) => void
+  onPageChange: (path: string) => void
 }
 
 const Navigation = ({ currentPage, onPageChange }: Props) => {
   const [openValue, setOpenValue] = useState('')
 
   return (
-    <nav className="w-full p-2">
-      <NavigationMenu value={openValue} onValueChange={setOpenValue}>
-        <NavigationMenuList className="gap-1">
+    <nav className="w-full p-2 flex items-center gap-1">
+      <NavigationMenu value={openValue} onValueChange={setOpenValue} className="flex-1 max-w-none justify-start">
+        <NavigationMenuList className="flex w-full gap-1">
           {NAV.map((item) =>
-            'submenus' in item && item.submenus.length > 0 ? (
+            'submenus' in item && item.submenus?.length ? (
               <NavigationMenuItem key={item.path} value={item.path}>
                 <NavigationMenuTrigger
                   onPointerMove={(e) => e.preventDefault()}
                   onPointerLeave={(e) => e.preventDefault()}
                   className={cn(
-                    (currentPage === item.path ||
-                      item.submenus.some((s) => s.path === currentPage)) &&
+                    (currentPage === item.path || item.submenus.some((s) => s.path === currentPage)) &&
                       'bg-accent text-accent-foreground'
                   )}
                 >
@@ -47,17 +48,18 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                           type="button"
                           className={cn(
                             'flex w-full rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer',
-                            currentPage === sub.path &&
-                              'bg-accent text-accent-foreground'
+                            currentPage === sub.path && 'bg-accent text-accent-foreground'
                           )}
                           onClick={() => {
-                          onPageChange(sub.path)
-                          setOpenValue('')
-                        }}
+                            onPageChange(sub.path)
+                            setOpenValue('')
+                          }}
                         >
                           <div className="flex flex-col gap-1 items-start">
                             {sub.label}
-                            {sub.description && <span className="text-xs text-muted-foreground text-left">{sub.description}</span>}
+                            {sub.description && (
+                              <span className="text-xs text-muted-foreground text-left">{sub.description}</span>
+                            )}
                           </div>
                         </button>
                       </li>
@@ -71,8 +73,7 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
                   type="button"
                   className={cn(
                     navigationMenuTriggerStyle(),
-                    currentPage === item.path &&
-                      'bg-accent text-accent-foreground'
+                    currentPage === item.path && 'bg-accent text-accent-foreground'
                   )}
                   onClick={() => onPageChange(item.path)}
                 >
@@ -83,6 +84,11 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
           )}
         </NavigationMenuList>
       </NavigationMenu>
+      <div className="ml-auto flex items-center gap-2">
+        <Button variant="outline" onClick={() => onPageChange(SETTINGS_PATH)}>
+          <LucideSettings className="size-4" />
+        </Button>
+      </div>
     </nav>
   )
 }

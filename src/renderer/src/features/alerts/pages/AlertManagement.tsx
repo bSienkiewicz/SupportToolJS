@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import AlertHeader from '../../../components/Header'
-import { AlertListRow } from '../../../components/AlertListRow'
-import { EditAlertDialog } from '../../../components/EditAlertDialog'
-import type { NrAlert } from '../../../../../types/alerts'
-import { newAlertTemplate, type AlertChange } from '../alertUtils'
+import AlertHeader from '@/renderer/src/components/Header'
+import { AlertListRow } from '@/renderer/src/features/alerts/components/AlertListRow'
+import { EditAlertDialog } from '@/renderer/src/features/alerts/components/EditAlertDialog'
+import type { NrAlert } from '@/types/alerts'
+import { newAlertTemplate, type AlertChange } from '@/renderer/src/features/alerts/alertUtils'
 import { Button } from '@/renderer/src/components/ui/button'
 import { useFooter } from '@/renderer/src/context/FooterContext'
-import { RepoFooterInfo } from '@/renderer/src/components/RepoFooterInfo'
+import { RepoFooterInfo } from '@/renderer/src/features/alerts/components/RepoFooterInfo'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/renderer/src/components/ui/dialog'
-import { Spinner } from '../../../components/ui/spinner'
+import { Spinner } from '@/renderer/src/components/ui/spinner'
 
 const AlertManagement = () => {
   const [changedAlerts, setChangedAlerts] = useState<AlertChange[]>([])
@@ -243,4 +243,4 @@ const AlertManagement = () => {
 }
 
 export default AlertManagement
-export type { AlertChange } from '../alertUtils'
+export type { AlertChange } from '@/renderer/src/features/alerts/alertUtils'

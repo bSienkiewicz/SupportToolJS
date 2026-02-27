@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { NrAlert } from '../../../types/alerts'
+import type { NrAlert } from '@/types/alerts'
 import {
   SEVERITY_OPTIONS,
   AGGREGATION_METHOD_OPTIONS,
   CRITICAL_OPERATOR_OPTIONS,
   CRITICAL_THRESHOLD_OCCURRENCES_OPTIONS,
-} from '../../../types/alerts'
+} from '@/types/alerts'
 import {
   getAlertChangelog,
   isAlertInvalid,
   isExpirationDurationInvalid,
   stripForbiddenChars,
   hasForbiddenChars,
-} from '../features/alerts/alertUtils'
+} from '@/renderer/src/features/alerts/alertUtils'
 import {
   PRINT_DURATION_SUFFIX,
   buildThresholdStatsNrql,
   parseThresholdStatsResults,
   getPrintDurationProposedConfig,
   calculateSuggestedThreshold,
-} from '../features/alerts/alertAuditHelpers'
+} from '@/renderer/src/features/alerts/alertAuditHelpers'
 import { Button } from '@/renderer/src/components/ui/button'
 import {
   Field,
@@ -46,9 +46,9 @@ import {
 } from '@/renderer/src/components/ui/dialog'
 import { LucideSave, LucideTrash2, LucideCalculator } from 'lucide-react'
 import { toast } from 'sonner'
-import { Switch } from './ui/switch'
-import { InputGroup, InputGroupAddon, InputGroupInput } from './ui/input-group'
-import { Spinner } from './ui/spinner'
+import { Switch } from '@/renderer/src/components/ui/switch'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'
+import { Spinner } from '@/renderer/src/components/ui/spinner'
 
 export type EditAlertDialogProps = {
   open: boolean

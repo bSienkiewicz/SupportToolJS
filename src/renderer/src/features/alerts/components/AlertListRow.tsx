@@ -1,9 +1,9 @@
-import type { NrAlert } from '../../../types/alerts'
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from './ui/item'
-import { Button } from './ui/button'
+import type { NrAlert } from '@/types/alerts'
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/renderer/src/components/ui/item'
+import { Button } from '@/renderer/src/components/ui/button'
 import { LucideCircle, LucideCircleCheck } from 'lucide-react'
-import { Badge } from './ui/badge'
-import { getAlertType } from '../features/alerts/alertUtils'
+import { Badge } from '@/renderer/src/components/ui/badge'
+import { getAlertType } from '@/renderer/src/features/alerts/alertUtils'
 
 type AlertListRowProps = {
   alert: NrAlert

@@ -26,7 +26,7 @@ export const METHOD_ENDPOINTS: Record<RequestMethod, { urlTemplate: string }> = 
     urlTemplate: 'https://{host}/dm/services/ConsignmentService',
   },
   CREATE_CONSIGNMENT: {
-    urlTemplate: 'https://{host}/dm/services/ConsignmentService',
+    urlTemplate: 'https://{host}/dm/services/ConsignmentService2',
   },
 }
 

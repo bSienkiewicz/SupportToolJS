@@ -32,11 +32,11 @@ export interface SoapFieldConfig {
  * Default body and build/parse live here; add similar blocks for other methods (e.g. CREATE_CONSIGNMENT).
  */
 export const CREATE_PAPERWORK_FIELDS: SoapFieldConfig[] = [
-  { key: 'dmc', label: 'DMC numbers (comma-separated)', role: 'consignmentCodes' },
-  { key: 'type', label: 'Type', role: 'parameter', propertyName: 'type' },
+  { key: 'dmc', label: 'DMCs', role: 'consignmentCodes' },
   { key: 'format', label: 'Format', role: 'parameter', propertyName: 'format' },
   { key: 'dpi', label: 'DPI', role: 'parameter', propertyName: 'dpi' },
   { key: 'dimension', label: 'Dimension', role: 'parameter', propertyName: 'dimension' },
+  { key: 'type', label: 'Type', role: 'parameter', propertyName: 'type' },
 ]
 
 /** Build SOAP XML from form values. Omits empty values. */

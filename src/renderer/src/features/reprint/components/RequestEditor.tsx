@@ -1,14 +1,26 @@
-import React, { useEffect, useCallback, useState } from 'react'
+import React, { useEffect, useCallback, useState, useRef } from 'react'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Input } from '@/renderer/src/components/ui/input'
 import { Button } from '@/renderer/src/components/ui/button'
+import { Label } from '@/renderer/src/components/ui/label'
 import { useRequest } from '@/renderer/src/context/RequestContext'
-import { getDefaultBody } from '@/renderer/src/features/reprint/soapRequest'
+import {
+  getDefaultBody,
+  buildSoapXml,
+  parseSoapXml,
+  CREATE_PAPERWORK_FIELDS,
+} from '@/renderer/src/features/reprint/soapRequest'
 import { formatXml } from '@/renderer/src/features/reprint/xmlUtils'
 import type { RequestMethod } from '@/renderer/src/features/reprint/requestConfig'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { LucideCopy, LucideForm, LucideChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/renderer/lib/utils'
+
+const REPRINT_FORM_KEYS = ['dmc', 'type', 'format', 'dpi', 'dimension'] as const
+const EMPTY_FORM: Record<string, string> = Object.fromEntries(
+  REPRINT_FORM_KEYS.map((k) => [k, ''])
+)
 
 type RequestEditorProps = {
   requestType: RequestMethod
@@ -17,10 +29,39 @@ type RequestEditorProps = {
 export function RequestEditor({ requestType }: RequestEditorProps) {
   const { url, setUrl, requestBody, setRequestBody } = useRequest()
   const [expandedEditor, setExpandedEditor] = useState(false)
+  const [formValues, setFormValues] = useState<Record<string, string>>(EMPTY_FORM)
+  const skipSyncFromFormRef = useRef(false)
 
   useEffect(() => {
     setRequestBody(getDefaultBody(requestType))
   }, [requestType, setRequestBody])
+
+  // Sync editor body -> form when user edits XML (only for REPRINT / createPaperwork structure)
+  useEffect(() => {
+    if (skipSyncFromFormRef.current) {
+      skipSyncFromFormRef.current = false
+      return
+    }
+    if (requestType !== 'REPRINT' || !requestBody.trim()) return
+    const parsed = parseSoapXml(requestBody)
+    if (parsed) setFormValues((prev) => ({ ...EMPTY_FORM, ...prev, ...parsed }))
+  }, [requestBody, requestType])
+
+  const updateFormAndBody = useCallback(
+    (next: Record<string, string>) => {
+      setFormValues(next)
+      skipSyncFromFormRef.current = true
+      setRequestBody(buildSoapXml(next))
+    },
+    [setRequestBody]
+  )
+
+  const handleFormChange = useCallback(
+    (key: string, value: string) => {
+      updateFormAndBody({ ...formValues, [key]: value })
+    },
+    [formValues, updateFormAndBody]
+  )
 
   const handleFormat = useCallback(() => {
     const formatted = formatXml(requestBody)
@@ -33,6 +74,8 @@ export function RequestEditor({ requestType }: RequestEditorProps) {
     toast.success('Copied to clipboard')
   }, [requestBody])
 
+  const isReprint = requestType === 'REPRINT'
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <Input
@@ -41,16 +84,45 @@ export function RequestEditor({ requestType }: RequestEditorProps) {
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
       />
-      <div className="flex-1 flex flex-col p-4 overflow-hidden">
-        <div
-          className='relative'
-        >
+      {isReprint && (
+        <div className="shrink-0 border-b bg-muted/30 px-4 py-3 space-y-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="req-dmc">Consignment codes (DMC)</Label>
+              <Input
+                id="req-dmc"
+                value={formValues.dmc ?? ''}
+                onChange={(e) => handleFormChange('dmc', e.target.value)}
+                placeholder="DMC1, DMC2, …"
+                className="font-mono text-sm"
+              />
+            </div>
+            {CREATE_PAPERWORK_FIELDS.filter((f) => f.role === 'parameter').map(
+              (f) => (
+                <div key={f.key} className="space-y-1.5">
+                  <Label htmlFor={`req-${f.key}`}>{f.label}</Label>
+                  <Input
+                    id={`req-${f.key}`}
+                    value={formValues[f.key] ?? ''}
+                    onChange={(e) => handleFormChange(f.key, e.target.value)}
+                    placeholder={f.label}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
+      <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
+        <div className={`relative ${expandedEditor ? 'flex-1 min-h-0' : ''}`}>
           <CodeEditor
+            className={cn('overflow-auto', expandedEditor ? 'h-full' : '')}
             value={requestBody}
             onChange={setRequestBody}
             language="xml"
             placeholder="Request body (XML)"
-            minHeight={expandedEditor ? '25rem' : '6rem'}
+            minHeight={expandedEditor ? '100%' : '6rem'}
           />
           {!expandedEditor && (
             <div

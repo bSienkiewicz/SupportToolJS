@@ -5,9 +5,10 @@ import Navigation from '@/renderer/src/layout/Navigation'
 import { ROUTES, getPathFromHash } from '@/renderer/src/routes'
 import AlertManagement from '@/renderer/src/features/alerts/pages/AlertManagement'
 import { FooterProvider, FooterSlot } from '@/renderer/src/context/FooterContext'
+import { RequestProvider } from '@/renderer/src/context/RequestContext'
 import AlertAudit from '@/renderer/src/features/alerts/pages/AlertAudit'
 import { TooltipProvider } from '@/renderer/src/components/ui/tooltip'
-import ReprintPage from './features/reprint/pages/ReprintPage'
+import RequestPage from './features/reprint/pages/RequestPage'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)
@@ -31,6 +32,7 @@ function App(): React.JSX.Element {
   return (
     <TooltipProvider>
       <FooterProvider>
+        <RequestProvider>
         <div className="flex flex-col h-screen">
           <div className="titlebar"></div>
           <Navigation currentPage={page} onPageChange={onPageChange} />
@@ -39,11 +41,12 @@ function App(): React.JSX.Element {
             {page === ROUTES.ALERTS && <div className="p-6">Alerts</div>}
             {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
             {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
-            {page === ROUTES.REPRINT && <ReprintPage />}
+            {page === ROUTES.DM_REQUESTS && <RequestPage />}
             <Toaster />
           </main>
           <FooterSlot />
         </div>
+        </RequestProvider>
       </FooterProvider>
     </TooltipProvider>
   )

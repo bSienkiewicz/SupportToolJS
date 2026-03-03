@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { EditorView } from '@codemirror/view'
 import { langs } from '@uiw/codemirror-extensions-langs'
 import { cn } from '@/renderer/lib/utils'
 
@@ -31,7 +30,7 @@ export function CodeEditor({
   readOnly = false,
 }: CodeEditorProps) {
   const extensions = useMemo(
-    () => [EditorView.lineWrapping, languageExtensions[language]()],
+    () => [languageExtensions[language]()],
     [language]
   )
 

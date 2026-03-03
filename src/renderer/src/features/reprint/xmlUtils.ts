@@ -31,6 +31,17 @@ export function getFaultString(xml: string): string | null {
   return raw ? reduceFaultString(raw) : null
 }
 
+export function getLabelsBase64(xml: string): string | null {
+  const doc = parseXml(xml)
+  const labelsB64 = doc?.querySelector('labels')?.textContent?.trim() ?? null
+  return labelsB64 ? labelsB64 : null
+}
+
+export function getZplFromBase64(base64: string): string | null {
+  const decoded = atob(base64)
+  return decoded ? decoded : null
+}
+
 /**
  * Get text content of the first element matching tagName (optional namespace).
  * Example: getText(doc, 'consignmentId') or getText(doc, 'ns:status', 'ns')

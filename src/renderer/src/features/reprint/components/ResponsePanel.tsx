@@ -1,16 +1,28 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Button } from '@/renderer/src/components/ui/button'
 import { useRequest } from '@/renderer/src/context/RequestContext'
-import { formatXml, getFaultString } from '@/renderer/src/features/reprint/xmlUtils'
+import { formatXml, getFaultString, getLabelsBase64, getZplFromBase64 } from '@/renderer/src/features/reprint/xmlUtils'
 import { LucideCopy, LucideForm } from 'lucide-react'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { toast } from 'sonner'
 import { Badge } from '@/renderer/src/components/ui/badge'
 import { Spinner } from '@/renderer/src/components/ui/spinner'
+import { Input } from '@/renderer/src/components/ui/input'
+import { Label } from '@/renderer/src/components/ui/label'
 
 export function ResponsePanel() {
   const { response, loading, updateResponseBody } = useRequest()
+  const [b64, setB64] = useState<string | null>(null)
+  const [zpl, setZpl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!response?.body) return
+    const b64 = getLabelsBase64(response.body)
+    if (b64) setB64(b64)
+    const zpl = b64 ? getZplFromBase64(b64) : null
+    if (zpl) setZpl(zpl)
+  }, [response?.body])
 
   const handleFormat = useCallback(() => {
     if (!response?.body || response.error) return
@@ -18,11 +30,11 @@ export function ResponsePanel() {
     if (formatted !== response.body) updateResponseBody(formatted)
   }, [response?.body, response?.error, updateResponseBody])
 
-  const handleCopy = useCallback(() => {
-    if (!response?.body) return
-    navigator.clipboard.writeText(response.body)
+  const handleCopyToClipboard = useCallback((text: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
     toast.success('Copied to clipboard')
-  }, [response?.body])
+  }, [])
 
   const faultSummary = response?.body ? getFaultString(response.body) : null
 
@@ -50,7 +62,7 @@ export function ResponsePanel() {
           {response.status} {response.statusText}
         </Badge>
       </div>
-      <div className="flex-1 min-h-0 relative">
+      <div className="min-h-0 relative">
         <CodeEditor
           value={body}
           onChange={() => { }}
@@ -64,7 +76,7 @@ export function ResponsePanel() {
               <LucideForm /> Format
             </Button>
           )}
-          <Button variant="outline" size="xs" onClick={handleCopy}>
+          <Button variant="outline" size="xs" onClick={() => handleCopyToClipboard(body)}>
             <LucideCopy />
           </Button>
         </ButtonGroup>
@@ -74,6 +86,25 @@ export function ResponsePanel() {
           {response.error && (<span className='font-bold'>{response.error}</span>)}
           {!response.error && (<span className='font-bold'>{faultSummary}</span>)}
         </span>
+      )}
+      {!response.error && !faultSummary && response.body && (
+        <>
+        <Label htmlFor='b64-input'>Base64:</Label>
+        <div className='relative'>
+        <Input id='b64-input' value={b64 ?? ''} readOnly className='w-full' />
+        <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(b64 ?? '')}>
+          <LucideCopy /> Copy
+        </Button>
+        </div>
+        
+        <Label htmlFor='zpl-input'>ZPL:</Label>
+        <div className='relative'>
+          <Input id='zpl-input' value={zpl ?? ''} readOnly className='w-full' />
+          <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(zpl ?? '')}>
+            <LucideCopy /> Copy
+          </Button>
+        </div>
+        </>
       )}
     </div>
   )

@@ -10,7 +10,7 @@ import {
   parseSoapXml,
   CREATE_PAPERWORK_FIELDS,
 } from '@/renderer/src/features/reprint/soapRequest'
-import { formatXml } from '@/renderer/src/features/reprint/xmlUtils'
+import { formatXml } from '@/renderer/src/features/reprint/formatUtils'
 import {
   getRestEndpointUrl,
   type ApiType,
@@ -144,7 +144,7 @@ export function RequestEditor({ apiType, requestType, selectedStack }: RequestEd
             REST GET: parameters are in the URL above. Edit the form to change dimension, format, type, resolution and consignment code.
           </p>
         ) : (
-          <div className={`relative flex-1 min-h-0 flex flex-col ${expandedEditor ? '' : ''}`}>
+          <div className={`relative overflow-auto`}>
             <div className={cn('relative flex-1 min-h-0', expandedEditor ? 'flex-1' : '')}>
               <CodeEditor
                 className={cn('overflow-auto', expandedEditor ? 'h-full' : '')}

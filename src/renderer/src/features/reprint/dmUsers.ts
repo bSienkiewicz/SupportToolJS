@@ -1,7 +1,3 @@
-/**
- * DM user type and stack options. Persisted in app config (dmUsers JSON, dmSelectedUserId).
- * SOAP and REST use different credentials; at least one auth method is required.
- */
 export interface DMUser {
   id: string
   customerName: string

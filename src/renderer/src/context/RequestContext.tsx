@@ -11,7 +11,7 @@ import {
   type RequestCredentials,
   type SendRequestOptions,
 } from '@/renderer/src/features/reprint/requestConfig'
-import { formatXml, formatJson, tryParseJson } from '@/renderer/src/features/reprint/xmlUtils'
+import { formatXml, formatJson, tryParseJson } from '@/renderer/src/features/reprint/formatUtils'
 
 type RequestContextValue = {
   url: string

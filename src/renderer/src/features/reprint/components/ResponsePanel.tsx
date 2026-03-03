@@ -11,7 +11,7 @@ import {
   getLabelsBase64FromJson,
   getZplFromBase64,
   tryParseJson,
-} from '@/renderer/src/features/reprint/xmlUtils'
+} from '@/renderer/src/features/reprint/formatUtils'
 import { LucideChevronDown, LucideCopy, LucideForm } from 'lucide-react'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { toast } from 'sonner'
@@ -131,7 +131,7 @@ export function ResponsePanel() {
             </Button>
           </div>
 
-          <Label htmlFor='zpl-input'>ZPL:</Label>
+          <Label htmlFor='zpl-input'>Decoded:</Label>
           <div className='relative'>
             <Input id='zpl-input' value={zpl ?? ''} readOnly className='w-full' />
             <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(zpl ?? '')}>

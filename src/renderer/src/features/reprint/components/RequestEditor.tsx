@@ -11,7 +11,11 @@ import {
   CREATE_PAPERWORK_FIELDS,
 } from '@/renderer/src/features/reprint/soapRequest'
 import { formatXml } from '@/renderer/src/features/reprint/xmlUtils'
-import type { RequestMethod } from '@/renderer/src/features/reprint/requestConfig'
+import {
+  getRestEndpointUrl,
+  type ApiType,
+  type RequestMethod,
+} from '@/renderer/src/features/reprint/requestConfig'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { LucideCopy, LucideForm, LucideChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
@@ -23,44 +27,64 @@ const EMPTY_FORM: Record<string, string> = Object.fromEntries(
 )
 
 type RequestEditorProps = {
+  apiType: ApiType
   requestType: RequestMethod
+  selectedStack: string | null | undefined
 }
 
-export function RequestEditor({ requestType }: RequestEditorProps) {
+export function RequestEditor({ apiType, requestType, selectedStack }: RequestEditorProps) {
   const { url, setUrl, requestBody, setRequestBody } = useRequest()
   const [expandedEditor, setExpandedEditor] = useState(false)
   const [formValues, setFormValues] = useState<Record<string, string>>(EMPTY_FORM)
   const skipSyncFromFormRef = useRef(false)
 
   useEffect(() => {
-    setRequestBody(getDefaultBody(requestType))
-  }, [requestType, setRequestBody])
+    if (apiType === 'SOAP') {
+      setRequestBody(getDefaultBody(requestType))
+    } else {
+      setRequestBody('')
+    }
+  }, [apiType, requestType, setRequestBody])
 
-  // Sync editor body -> form when user edits XML (only for REPRINT / createPaperwork structure)
+  // Sync editor body -> form when user edits XML (SOAP REPRINT only)
   useEffect(() => {
     if (skipSyncFromFormRef.current) {
       skipSyncFromFormRef.current = false
       return
     }
-    if (requestType !== 'REPRINT' || !requestBody.trim()) return
+    if (apiType !== 'SOAP' || requestType !== 'REPRINT' || !requestBody.trim()) return
     const parsed = parseSoapXml(requestBody)
     if (parsed) setFormValues((prev) => ({ ...EMPTY_FORM, ...prev, ...parsed }))
-  }, [requestBody, requestType])
+  }, [apiType, requestBody, requestType])
 
-  const updateFormAndBody = useCallback(
-    (next: Record<string, string>) => {
-      setFormValues(next)
-      skipSyncFromFormRef.current = true
-      setRequestBody(buildSoapXml(next))
-    },
-    [setRequestBody]
-  )
+  // Build REST URL when form or stack changes (REST REPRINT only)
+  useEffect(() => {
+    if (apiType !== 'REST' || requestType !== 'REPRINT') return
+    const firstDmc = (formValues.dmc ?? '').split(',')[0]?.trim() || ''
+    const restUrl = getRestEndpointUrl(
+      selectedStack,
+      'REPRINT',
+      { consignmentCode: firstDmc },
+      {
+        dimension: formValues.dimension ?? '',
+        format: formValues.format ?? '',
+        type: formValues.type ?? '',
+        resolution: formValues.dpi ?? '',
+      }
+    )
+    setUrl(restUrl)
+  }, [apiType, requestType, selectedStack, formValues, setUrl])
 
   const handleFormChange = useCallback(
     (key: string, value: string) => {
-      updateFormAndBody({ ...formValues, [key]: value })
+      const next = { ...formValues, [key]: value }
+      setFormValues(next)
+      if (apiType === 'SOAP') {
+        skipSyncFromFormRef.current = true
+        setRequestBody(buildSoapXml(next))
+      }
     },
-    [formValues, updateFormAndBody]
+    [apiType, formValues, setRequestBody]
   )
 
   const handleFormat = useCallback(() => {
@@ -115,44 +139,52 @@ export function RequestEditor({ requestType }: RequestEditorProps) {
         </div>
       )}
       <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
-        <div className={`relative ${expandedEditor ? 'flex-1 min-h-0' : ''}`}>
-          <CodeEditor
-            className={cn('overflow-auto', expandedEditor ? 'h-full' : '')}
-            value={requestBody}
-            onChange={setRequestBody}
-            language="xml"
-            placeholder="Request body (XML)"
-            minHeight={expandedEditor ? '100%' : '8rem'}
-          />
-          {!expandedEditor && (
-            <div
-              className="absolute inset-0 bg-linear-to-b from-transparent to-background/90 rounded-md z-10 cursor-pointer flex items-end justify-center pb-2"
-              onClick={() => setExpandedEditor(true)}
-              role="button"
-              tabIndex={0}
-              aria-label="Expand editor"
-            >
-              <LucideChevronDown className="size-4 text-muted-foreground" />
+        {apiType === 'REST' ? (
+          <p className="text-sm text-muted-foreground py-2">
+            REST GET: parameters are in the URL above. Edit the form to change dimension, format, type, resolution and consignment code.
+          </p>
+        ) : (
+          <div className={`relative flex-1 min-h-0 flex flex-col ${expandedEditor ? '' : ''}`}>
+            <div className={cn('relative flex-1 min-h-0', expandedEditor ? 'flex-1' : '')}>
+              <CodeEditor
+                className={cn('overflow-auto', expandedEditor ? 'h-full' : '')}
+                value={requestBody}
+                onChange={setRequestBody}
+                language="xml"
+                placeholder="Request body (XML)"
+                minHeight={expandedEditor ? '100%' : '8rem'}
+              />
+              {!expandedEditor && (
+                <div
+                  className="absolute inset-0 bg-linear-to-b from-transparent to-background/90 rounded-md z-10 cursor-pointer flex items-end justify-center pb-2"
+                  onClick={() => setExpandedEditor(true)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Expand editor"
+                >
+                  <LucideChevronDown className="size-4 text-muted-foreground" />
+                </div>
+              )}
+              <ButtonGroup className="absolute top-2 right-2 z-20">
+                <Button variant="outline" size="xs" onClick={handleFormat}>
+                  <LucideForm /> Format
+                </Button>
+                <Button variant="outline" size="xs" onClick={handleCopy}>
+                  <LucideCopy />
+                </Button>
+                {expandedEditor && (
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => setExpandedEditor(false)}
+                  >
+                    <LucideChevronDown className="rotate-180" /> Collapse
+                  </Button>
+                )}
+              </ButtonGroup>
             </div>
-          )}
-          <ButtonGroup className="absolute top-2 right-2 z-20">
-            <Button variant="outline" size="xs" onClick={handleFormat}>
-              <LucideForm /> Format
-            </Button>
-            <Button variant="outline" size="xs" onClick={handleCopy}>
-              <LucideCopy />
-            </Button>
-            {expandedEditor && (
-              <Button
-                variant="outline"
-                size="xs"
-                onClick={() => setExpandedEditor(false)}
-              >
-                <LucideChevronDown className="rotate-180" /> Collapse
-              </Button>
-            )}
-          </ButtonGroup>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

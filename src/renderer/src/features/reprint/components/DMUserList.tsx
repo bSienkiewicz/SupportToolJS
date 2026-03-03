@@ -1,20 +1,6 @@
 import { Badge } from '@/renderer/src/components/ui/badge'
 import { Button } from '@/renderer/src/components/ui/button'
-import { Input } from '@/renderer/src/components/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/renderer/src/components/ui/select'
-import { SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/renderer/src/components/ui/sheet'
-import { Label } from '@/renderer/src/components/ui/label'
-import { LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from 'lucide-react'
-import React, { useState, useMemo, useEffect } from 'react'
-import type { DMUser } from '../dmUsers'
-import { DM_STACKS } from '../dmUsers'
 import {
   Dialog,
   DialogClose,
@@ -25,9 +11,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/renderer/src/components/ui/dialog'
+import { SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/renderer/src/components/ui/sheet'
+import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import type { DMUser } from '../dmUsers'
+import { DM_STACKS } from '../dmUsers'
+import { DMUserForm, type DMUserFormValues } from './DMUserForm'
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+const emptyFormValues: DMUserFormValues = {
+  customerName: '',
+  login: '',
+  password: '',
+  stack: DM_STACKS[0],
+  restLogin: '',
+  restPassword: '',
 }
 
 type DMUserListProps = {
@@ -37,82 +38,82 @@ type DMUserListProps = {
   onUsersChange: (users: DMUser[]) => void
 }
 
-const DMUserList = ({
+export default function DMUserList({
   users,
   selectedUserId,
   onSelectUser,
   onUsersChange,
-}: DMUserListProps) => {
+}: DMUserListProps) {
   const [search, setSearch] = useState('')
-  /** null = no form, 'add' = new user, string = editing user id */
   const [formMode, setFormMode] = useState<null | 'add' | string>(null)
-  const [showPassword, setShowPassword] = useState(false)
-  const [formCustomerName, setFormCustomerName] = useState('')
-  const [formLogin, setFormLogin] = useState('')
-  const [formPassword, setFormPassword] = useState('')
-  const [formStack, setFormStack] = useState<string>(DM_STACKS[0])
 
   const editingUser = formMode && formMode !== 'add' ? users.find((u) => u.id === formMode) : null
-  useEffect(() => {
-    if (editingUser) {
-      setFormCustomerName(editingUser.customerName)
-      setFormLogin(editingUser.login)
-      setFormPassword(editingUser.password)
-      setFormStack(editingUser.stack)
-    } else if (formMode === 'add') {
-      setFormCustomerName('')
-      setFormLogin('')
-      setFormPassword('')
-      setFormStack(DM_STACKS[0])
-    }
-  }, [formMode, editingUser])
+  const formInitialValues = useMemo<DMUserFormValues>(
+    () =>
+      editingUser
+        ? {
+            customerName: editingUser.customerName,
+            login: editingUser.login ?? '',
+            password: editingUser.password ?? '',
+            stack: editingUser.stack,
+            restLogin: editingUser.restLogin ?? '',
+            restPassword: editingUser.restPassword ?? '',
+          }
+        : emptyFormValues,
+    [editingUser]
+  )
 
   const filteredUsers = useMemo(() => {
     const list = !search.trim()
       ? users
       : users.filter(
-        (u) =>
-          u.customerName.toLowerCase().includes(search.trim().toLowerCase()) ||
-          u.login.toLowerCase().includes(search.trim().toLowerCase()) ||
-          u.stack.toLowerCase().includes(search.trim().toLowerCase())
-      )
+          (u) =>
+            u.customerName.toLowerCase().includes(search.trim().toLowerCase()) ||
+            (u.login ?? '').toLowerCase().includes(search.trim().toLowerCase()) ||
+            u.stack.toLowerCase().includes(search.trim().toLowerCase())
+        )
     return [...list].sort((a, b) =>
       a.customerName.localeCompare(b.customerName, undefined, { sensitivity: 'base' })
     )
   }, [users, search])
 
-  const handleSaveUser = () => {
-    const customerName = formCustomerName.trim()
-    const login = formLogin.trim()
-    const password = formPassword
-    if (!customerName || !login || !password) return
-    if (formMode === 'add') {
-      const newUser: DMUser = {
-        id: generateId(),
-        customerName,
-        login,
-        password,
-        stack: formStack,
-      }
-      onUsersChange([...users, newUser])
-    } else if (editingUser) {
+  const handleSubmit = (values: DMUserFormValues) => {
+    const login = values.login?.trim() || undefined
+    const password = values.password || undefined
+    const restLogin = values.restLogin?.trim() || undefined
+    const restPassword = values.restPassword || undefined
+    if (editingUser) {
       onUsersChange(
         users.map((u) =>
           u.id === editingUser.id
-            ? { ...u, customerName, login, password, stack: formStack }
+            ? {
+                ...u,
+                customerName: values.customerName,
+                login,
+                password,
+                stack: values.stack,
+                restLogin,
+                restPassword,
+              }
             : u
         )
       )
+    } else {
+      onUsersChange([
+        ...users,
+        {
+          id: generateId(),
+          customerName: values.customerName,
+          login,
+          password,
+          stack: values.stack,
+          restLogin,
+          restPassword,
+        },
+      ])
     }
     setFormMode(null)
   }
-
-  const openAddForm = () => setFormMode('add')
-  const openEditForm = (e: React.MouseEvent, userId: string) => {
-    e.stopPropagation()
-    setFormMode(userId)
-  }
-  const closeForm = () => setFormMode(null)
 
   const handleRemoveUser = (userId: string) => {
     onUsersChange(users.filter((u) => u.id !== userId))
@@ -120,7 +121,7 @@ const DMUserList = ({
   }
 
   return (
-    <SheetContent side='left'>
+    <SheetContent side="left">
       <SheetHeader>
         <SheetTitle>Users</SheetTitle>
         <SheetDescription>Select a DM user for this session</SheetDescription>
@@ -138,75 +139,16 @@ const DMUserList = ({
         </InputGroup>
 
         {!formMode ? (
-          <Button variant="default" size="sm" onClick={openAddForm}>
+          <Button variant="default" size="sm" onClick={() => setFormMode('add')}>
             <LucidePlus className="size-4" /> Add User
           </Button>
         ) : (
-          <div className="rounded-md border border-input p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{editingUser ? 'Edit user' : 'New user'}</span>
-              <Button variant="ghost" size="xs" onClick={closeForm}>
-                Cancel
-              </Button>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs">Customer name</Label>
-              <Input
-                value={formCustomerName}
-                onChange={(e) => setFormCustomerName(e.target.value)}
-                placeholder="e.g. Yonderland"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs">Login</Label>
-              <Input
-                value={formLogin}
-                onChange={(e) => setFormLogin(e.target.value)}
-                placeholder="Username"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs">Password</Label>
-              <InputGroup>
-                <InputGroupInput
-                  type={showPassword ? 'text' : 'password'}
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-                <InputGroupAddon align="inline-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    className="text-muted-foreground"
-                    onClick={() => setShowPassword((v) => !v)}
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <LucideEyeOff className="size-4" /> : <LucideEye className="size-4" />}
-                  </Button>
-                </InputGroupAddon>
-              </InputGroup>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs">Stack</Label>
-              <Select value={formStack} onValueChange={setFormStack}>
-                <SelectTrigger size="default" className="w-full">
-                  <SelectValue placeholder="Stack" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DM_STACKS.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="default" size="sm" onClick={handleSaveUser}>
-              {editingUser ? 'Update user' : 'Save user'}
-            </Button>
-          </div>
+          <DMUserForm
+            initialValues={formInitialValues}
+            isEdit={!!editingUser}
+            onSubmit={handleSubmit}
+            onCancel={() => setFormMode(null)}
+          />
         )}
 
         <div className="flex flex-col gap-1.5 max-h-[50vh] overflow-auto">
@@ -216,10 +158,7 @@ const DMUserList = ({
             </p>
           ) : (
             filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                className="relative flex items-center gap-1"
-              >
+              <div key={user.id} className="relative flex items-center gap-1">
                 <Button
                   variant={selectedUserId === user.id ? 'secondary' : 'outline'}
                   className="flex-1 flex justify-start gap-2 border-0 w-full min-w-0"
@@ -233,7 +172,10 @@ const DMUserList = ({
                   variant="outline"
                   size="icon-xs"
                   className="shrink-0"
-                  onClick={(e) => openEditForm(e, user.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setFormMode(user.id)
+                  }}
                   title="Edit user"
                 >
                   <LucidePencil />
@@ -278,5 +220,3 @@ const DMUserList = ({
     </SheetContent>
   )
 }
-
-export default DMUserList

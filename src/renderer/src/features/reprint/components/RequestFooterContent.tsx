@@ -3,9 +3,12 @@ import { Sheet } from '@/renderer/src/components/ui/sheet'
 import React from 'react'
 import DMUserList from './DMUserList'
 import type { DMUser } from '../dmUsers'
+import { hasRestCredentials, hasSoapCredentials } from '../dmUsers'
 import { useRequest } from '@/renderer/src/context/RequestContext'
+import type { ApiType } from '../requestConfig'
 
 type RequestFooterContentProps = {
+  apiType: ApiType
   selectedUser: DMUser | null
   users: DMUser[]
   selectedUserId: string | null
@@ -16,6 +19,7 @@ type RequestFooterContentProps = {
 }
 
 export function RequestFooterContent({
+  apiType,
   selectedUser,
   users,
   selectedUserId,
@@ -25,6 +29,19 @@ export function RequestFooterContent({
   onUsersChange,
 }: RequestFooterContentProps) {
   const { sendRequest, loading } = useRequest()
+
+  const credentials =
+    selectedUser && apiType === 'SOAP' && hasSoapCredentials(selectedUser)
+      ? { login: selectedUser.login!, password: selectedUser.password! }
+      : selectedUser && apiType === 'REST' && hasRestCredentials(selectedUser)
+        ? { login: selectedUser.restLogin!, password: selectedUser.restPassword! }
+        : undefined
+
+  const sendOptions = apiType === 'REST' ? { method: 'GET' as const } : undefined
+  const noCredentialsForMode =
+    selectedUser &&
+    ((apiType === 'SOAP' && !hasSoapCredentials(selectedUser)) ||
+      (apiType === 'REST' && !hasRestCredentials(selectedUser)))
 
   return (
     <div className="flex items-center gap-2 text-xs justify-between">
@@ -53,14 +70,8 @@ export function RequestFooterContent({
       <Button
         variant="default"
         size="xs"
-        onClick={() =>
-          sendRequest(
-            selectedUser
-              ? { login: selectedUser.login, password: selectedUser.password }
-              : undefined
-          )
-        }
-        disabled={loading}
+        onClick={() => sendRequest(credentials, sendOptions)}
+        disabled={loading || !!noCredentialsForMode}
       >
         {loading ? 'Sending…' : 'Send'}
       </Button>

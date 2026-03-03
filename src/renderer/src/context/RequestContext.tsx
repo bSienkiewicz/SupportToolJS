@@ -9,8 +9,9 @@ import type { SendRequestResult } from '@/types/api'
 import {
   sendRequest as sendRequestApi,
   type RequestCredentials,
+  type SendRequestOptions,
 } from '@/renderer/src/features/reprint/requestConfig'
-import { formatXml } from '@/renderer/src/features/reprint/xmlUtils'
+import { formatXml, formatJson, tryParseJson } from '@/renderer/src/features/reprint/xmlUtils'
 
 type RequestContextValue = {
   url: string
@@ -20,7 +21,7 @@ type RequestContextValue = {
   response: SendRequestResult | null
   updateResponseBody: (body: string) => void
   loading: boolean
-  sendRequest: (credentials?: RequestCredentials | null) => Promise<void>
+  sendRequest: (credentials?: RequestCredentials | null, options?: SendRequestOptions) => Promise<void>
 }
 
 const RequestContext = createContext<RequestContextValue | null>(null)
@@ -32,15 +33,25 @@ export function RequestProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false)
 
   const sendRequest = useCallback(
-    async (credentials?: RequestCredentials | null) => {
-      if (!url.trim() || !requestBody.trim()) return
+    async (credentials?: RequestCredentials | null, options?: SendRequestOptions) => {
+      const isGet = options?.method === 'GET'
+      if (!url.trim()) return
+      if (!isGet && !requestBody.trim()) return
       setLoading(true)
       setResponse(null)
       try {
-        const result = await sendRequestApi(url, requestBody, credentials)
+        const result = await sendRequestApi(
+          url,
+          isGet ? '' : requestBody,
+          credentials,
+          options
+        )
+        const raw = result.body?.trim() ?? ''
         const body =
-          result.body?.trim() && !result.error
-            ? formatXml(result.body)
+          raw && !result.error
+            ? tryParseJson(raw) !== null
+              ? formatJson(raw)
+              : formatXml(raw)
             : result.body
         setResponse({ ...result, body })
       } finally {

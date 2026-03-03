@@ -2,8 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Button } from '@/renderer/src/components/ui/button'
 import { useRequest } from '@/renderer/src/context/RequestContext'
-import { formatXml, getFaultString, getLabelsBase64, getZplFromBase64 } from '@/renderer/src/features/reprint/xmlUtils'
-import { LucideChevronDown, LucideCopy, LucideForm, LucideMaximize2 } from 'lucide-react'
+import {
+  formatXml,
+  formatJson,
+  getFaultString,
+  getJsonErrorSummary,
+  getLabelsBase64,
+  getLabelsBase64FromJson,
+  getZplFromBase64,
+  tryParseJson,
+} from '@/renderer/src/features/reprint/xmlUtils'
+import { LucideChevronDown, LucideCopy, LucideForm } from 'lucide-react'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { toast } from 'sonner'
 import { Badge } from '@/renderer/src/components/ui/badge'
@@ -19,18 +28,22 @@ export function ResponsePanel() {
 
   useEffect(() => {
     if (!response?.body) return
-    const b64 = getLabelsBase64(response.body)
+    const isJson = tryParseJson(response.body) !== null
+    const b64 = isJson
+      ? getLabelsBase64FromJson(response.body)
+      : getLabelsBase64(response.body)
     if (b64) setB64(b64)
     const zpl = b64 ? getZplFromBase64(b64) : null
     if (zpl) setZpl(zpl)
     setExpandedEditor(false)
   }, [response?.body])
 
+  const isJsonBody = response?.body ? tryParseJson(response.body) !== null : false
   const handleFormat = useCallback(() => {
     if (!response?.body || response.error) return
-    const formatted = formatXml(response.body)
+    const formatted = isJsonBody ? formatJson(response.body) : formatXml(response.body)
     if (formatted !== response.body) updateResponseBody(formatted)
-  }, [response?.body, response?.error, updateResponseBody])
+  }, [response?.body, response?.error, isJsonBody, updateResponseBody])
 
   const handleCopyToClipboard = useCallback((text: string) => {
     if (!text) return
@@ -38,7 +51,11 @@ export function ResponsePanel() {
     toast.success('Copied to clipboard')
   }, [])
 
-  const faultSummary = response?.body ? getFaultString(response.body) : null
+  const faultSummary = response?.body
+    ? (tryParseJson(response.body) !== null
+        ? getJsonErrorSummary(response.body)
+        : getFaultString(response.body))
+    : null
 
   if (loading) {
     return (
@@ -56,6 +73,7 @@ export function ResponsePanel() {
 
   const body = response.error ? `Error: ${response.error}` : (response.body || '(empty)')
   const canFormat = !response.error && response.body?.trim()
+  const editorLanguage = isJsonBody ? 'json' : 'xml'
 
   return (
     <div className="flex flex-col gap-2 h-full">
@@ -67,8 +85,8 @@ export function ResponsePanel() {
       <div className="relative">
         <CodeEditor
           value={body}
-          onChange={() => { }}
-          language="xml"
+          onChange={() => {}}
+          language={editorLanguage}
           readOnly
           minHeight={expandedEditor ? '20rem' : '6rem'}
         />

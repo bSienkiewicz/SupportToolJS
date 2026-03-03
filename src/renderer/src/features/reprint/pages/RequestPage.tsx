@@ -8,8 +8,8 @@ import { useFooter } from '@/renderer/src/context/FooterContext'
 import { useRequest } from '@/renderer/src/context/RequestContext'
 import type { DMUser } from '@/renderer/src/features/reprint/dmUsers'
 import { parseDMUsers, CONFIG_KEYS } from '@/renderer/src/features/reprint/dmUsers'
-import type { RequestMethod } from '@/renderer/src/features/reprint/requestConfig'
-import { getEndpointUrl } from '@/renderer/src/features/reprint/requestConfig'
+import type { ApiType, RequestMethod } from '@/renderer/src/features/reprint/requestConfig'
+import { getSoapEndpointUrl } from '@/renderer/src/features/reprint/requestConfig'
 import { toast } from 'sonner'
 
 export default function RequestPage() {
@@ -17,6 +17,7 @@ export default function RequestPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [showUsersSheet, setShowUsersSheet] = useState(false)
   const [requestType, setRequestType] = useState<RequestMethod>('REPRINT')
+  const [apiType, setApiType] = useState<ApiType>('SOAP')
   const { setFooter } = useFooter()
   const { setUrl } = useRequest()
 
@@ -71,12 +72,15 @@ export default function RequestPage() {
   const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null
 
   useEffect(() => {
-    setUrl(getEndpointUrl(selectedUser?.stack, requestType))
-  }, [selectedUser?.stack, requestType, setUrl])
+    if (apiType === 'SOAP') {
+      setUrl(getSoapEndpointUrl(selectedUser?.stack, requestType))
+    }
+  }, [apiType, selectedUser?.stack, requestType, setUrl])
 
   useEffect(() => {
     setFooter(
       <RequestFooterContent
+        apiType={apiType}
         selectedUser={selectedUser}
         users={users}
         selectedUserId={selectedUserId}
@@ -89,6 +93,7 @@ export default function RequestPage() {
     return () => setFooter(null)
   }, [
     setFooter,
+    apiType,
     selectedUser,
     users,
     selectedUserId,
@@ -99,10 +104,19 @@ export default function RequestPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <RequestHeader requestType={requestType} setRequestType={setRequestType} />
+      <RequestHeader
+        requestType={requestType}
+        setRequestType={setRequestType}
+        apiType={apiType}
+        setApiType={setApiType}
+      />
       <ResizablePanelGroup className="flex-1 min-h-0">
         <ResizablePanel defaultSize={50} minSize={25} className="min-h-0 overflow-hidden">
-          <RequestEditor requestType={requestType} />
+          <RequestEditor
+            apiType={apiType}
+            requestType={requestType}
+            selectedStack={selectedUser?.stack}
+          />
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={25} className="p-4 min-h-0">

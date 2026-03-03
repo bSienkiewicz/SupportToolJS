@@ -37,6 +37,52 @@ export function getLabelsBase64(xml: string): string | null {
   return labelsB64 ? labelsB64 : null
 }
 
+/** Try parse string as JSON. Returns parsed value or null. */
+export function tryParseJson(s: string): unknown | null {
+  const trimmed = s?.trim()
+  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return null
+  try {
+    return JSON.parse(trimmed) as unknown
+  } catch {
+    return null
+  }
+}
+
+/** Metapack REST error shape: { errorCode, message, systemMessage }. Returns short message for display. */
+export function getJsonErrorSummary(body: string): string | null {
+  const obj = tryParseJson(body) as Record<string, unknown> | null
+  if (!obj || typeof obj !== 'object') return null
+  const msg = obj['message']
+  const system = obj['systemMessage']
+  if (typeof msg === 'string' && msg.trim()) return msg.trim()
+  if (typeof system === 'string' && system.trim()) return system.trim()
+  if (obj['errorCode']) return `${obj['errorCode']}: ${String(msg || system || 'Unknown error')}`
+  return null
+}
+
+/** REST success shape: { paperwork: { labels: "base64..." } }. Returns first labels string. */
+export function getLabelsBase64FromJson(body: string): string | null {
+  const obj = tryParseJson(body) as Record<string, unknown> | null
+  if (!obj || typeof obj !== 'object') return null
+  const paperwork = obj['paperwork']
+  if (paperwork && typeof paperwork === 'object' && paperwork !== null) {
+    const labels = (paperwork as Record<string, unknown>)['labels']
+    if (typeof labels === 'string' && labels.trim()) return labels.trim()
+  }
+  return null
+}
+
+/** Pretty-print JSON. Returns original string if parse fails. */
+export function formatJson(s: string, indentSize = 2): string {
+  const parsed = tryParseJson(s)
+  if (parsed === null) return s
+  try {
+    return JSON.stringify(parsed, null, indentSize)
+  } catch {
+    return s
+  }
+}
+
 export function getZplFromBase64(base64: string): string | null {
   const decoded = atob(base64)
   return decoded ? decoded : null

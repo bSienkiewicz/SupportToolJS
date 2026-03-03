@@ -59,9 +59,13 @@ export default function RequestPage() {
     (next: DMUser[]) => {
       setUsers(next)
       persistUsers(next)
+      if (selectedUserId && !next.some((u) => u.id === selectedUserId)) {
+        setSelectedUserId(null)
+        persistSelected(null)
+      }
       toast.success('User list updated')
     },
-    [persistUsers]
+    [persistUsers, persistSelected, selectedUserId]
   )
 
   const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null

@@ -88,12 +88,12 @@ export function RequestEditor({ requestType }: RequestEditorProps) {
         <div className="shrink-0 border-b bg-muted/30 px-4 py-3 space-y-3">
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="req-dmc">Consignment codes (DMC)</Label>
+              <Label htmlFor="req-dmc">DMCs</Label>
               <Input
                 id="req-dmc"
                 value={formValues.dmc ?? ''}
                 onChange={(e) => handleFormChange('dmc', e.target.value)}
-                placeholder="DMC1, DMC2, …"
+                placeholder="DMC123..., DMC456..."
                 className="font-mono text-sm"
               />
             </div>
@@ -122,7 +122,7 @@ export function RequestEditor({ requestType }: RequestEditorProps) {
             onChange={setRequestBody}
             language="xml"
             placeholder="Request body (XML)"
-            minHeight={expandedEditor ? '100%' : '6rem'}
+            minHeight={expandedEditor ? '100%' : '8rem'}
           />
           {!expandedEditor && (
             <div

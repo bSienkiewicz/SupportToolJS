@@ -11,10 +11,20 @@ import {
 } from '@/renderer/src/components/ui/select'
 import { SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/renderer/src/components/ui/sheet'
 import { Label } from '@/renderer/src/components/ui/label'
-import { LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch } from 'lucide-react'
+import { LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from 'lucide-react'
 import React, { useState, useMemo, useEffect } from 'react'
 import type { DMUser } from '../dmUsers'
 import { DM_STACKS } from '../dmUsers'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/renderer/src/components/ui/dialog'
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -58,13 +68,16 @@ const DMUserList = ({
   }, [formMode, editingUser])
 
   const filteredUsers = useMemo(() => {
-    if (!search.trim()) return users
-    const q = search.trim().toLowerCase()
-    return users.filter(
-      (u) =>
-        u.customerName.toLowerCase().includes(q) ||
-        u.login.toLowerCase().includes(q) ||
-        u.stack.toLowerCase().includes(q)
+    const list = !search.trim()
+      ? users
+      : users.filter(
+        (u) =>
+          u.customerName.toLowerCase().includes(search.trim().toLowerCase()) ||
+          u.login.toLowerCase().includes(search.trim().toLowerCase()) ||
+          u.stack.toLowerCase().includes(search.trim().toLowerCase())
+      )
+    return [...list].sort((a, b) =>
+      a.customerName.localeCompare(b.customerName, undefined, { sensitivity: 'base' })
     )
   }, [users, search])
 
@@ -100,6 +113,11 @@ const DMUserList = ({
     setFormMode(userId)
   }
   const closeForm = () => setFormMode(null)
+
+  const handleRemoveUser = (userId: string) => {
+    onUsersChange(users.filter((u) => u.id !== userId))
+    if (formMode === userId) setFormMode(null)
+  }
 
   return (
     <SheetContent side='left'>
@@ -200,11 +218,11 @@ const DMUserList = ({
             filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="relative"
+                className="relative flex items-center gap-1"
               >
                 <Button
                   variant={selectedUserId === user.id ? 'secondary' : 'outline'}
-                  className="flex-1 flex justify-start gap-2 border-0 w-full"
+                  className="flex-1 flex justify-start gap-2 border-0 w-full min-w-0"
                   onClick={() => onSelectUser(user.id)}
                 >
                   <Badge variant="outline">{user.stack}</Badge>
@@ -214,12 +232,44 @@ const DMUserList = ({
                   type="button"
                   variant="outline"
                   size="icon-xs"
-                  className="absolute top-1/2 -translate-y-1/2 right-2"
+                  className="shrink-0"
                   onClick={(e) => openEditForm(e, user.id)}
                   title="Edit user"
                 >
                   <LucidePencil />
                 </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      title="Remove user"
+                    >
+                      <LucideTrash2 />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent showCloseButton>
+                    <DialogHeader>
+                      <DialogTitle>Remove user</DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to remove {user.customerName}?
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleRemoveUser(user.id)}
+                      >
+                        Remove
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             ))
           )}

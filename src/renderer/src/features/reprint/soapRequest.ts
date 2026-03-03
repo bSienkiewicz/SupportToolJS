@@ -126,7 +126,7 @@ export const DEFAULT_SOAP_XML = ENVELOPE_START + ENVELOPE_END
 
 /** Example default for Reprint (createPaperwork) with sample consignment + params. */
 const DEFAULT_REPRINT_BODY = buildSoapXml({
-  dmc: 'DMC1JY8Y88IY',
+  dmc: '',
   type: 'all',
   format: 'zpl',
   dpi: '300',

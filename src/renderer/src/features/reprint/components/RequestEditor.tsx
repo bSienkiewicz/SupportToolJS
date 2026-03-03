@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useState } from 'react'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Input } from '@/renderer/src/components/ui/input'
 import { Button } from '@/renderer/src/components/ui/button'
@@ -7,7 +7,7 @@ import { getDefaultBody } from '@/renderer/src/features/reprint/soapRequest'
 import { formatXml } from '@/renderer/src/features/reprint/xmlUtils'
 import type { RequestMethod } from '@/renderer/src/features/reprint/requestConfig'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
-import { LucideCopy, LucideForm } from 'lucide-react'
+import { LucideCopy, LucideForm, LucideChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 type RequestEditorProps = {
@@ -16,6 +16,7 @@ type RequestEditorProps = {
 
 export function RequestEditor({ requestType }: RequestEditorProps) {
   const { url, setUrl, requestBody, setRequestBody } = useRequest()
+  const [expandedEditor, setExpandedEditor] = useState(false)
 
   useEffect(() => {
     setRequestBody(getDefaultBody(requestType))
@@ -40,23 +41,44 @@ export function RequestEditor({ requestType }: RequestEditorProps) {
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
       />
-      <div className="flex-1 min-h-0 flex flex-col p-4 overflow-hidden">
-        <div className="flex-1 min-h-0 relative overflow-hidden">
+      <div className="flex-1 flex flex-col p-4 overflow-hidden">
+        <div
+          className='relative'
+        >
           <CodeEditor
-            className="h-full"
             value={requestBody}
             onChange={setRequestBody}
             language="xml"
             placeholder="Request body (XML)"
-            minHeight="100%"
+            minHeight={expandedEditor ? '25rem' : '6rem'}
           />
-          <ButtonGroup className="absolute top-2 right-2">
+          {!expandedEditor && (
+            <div
+              className="absolute inset-0 bg-linear-to-b from-transparent to-background/90 rounded-md z-10 cursor-pointer flex items-end justify-center pb-2"
+              onClick={() => setExpandedEditor(true)}
+              role="button"
+              tabIndex={0}
+              aria-label="Expand editor"
+            >
+              <LucideChevronDown className="size-4 text-muted-foreground" />
+            </div>
+          )}
+          <ButtonGroup className="absolute top-2 right-2 z-20">
             <Button variant="outline" size="xs" onClick={handleFormat}>
               <LucideForm /> Format
             </Button>
             <Button variant="outline" size="xs" onClick={handleCopy}>
               <LucideCopy />
             </Button>
+            {expandedEditor && (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => setExpandedEditor(false)}
+              >
+                <LucideChevronDown className="rotate-180" /> Collapse
+              </Button>
+            )}
           </ButtonGroup>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Button } from '@/renderer/src/components/ui/button'
 import { useRequest } from '@/renderer/src/context/RequestContext'
 import { formatXml, getFaultString, getLabelsBase64, getZplFromBase64 } from '@/renderer/src/features/reprint/xmlUtils'
-import { LucideCopy, LucideForm } from 'lucide-react'
+import { LucideChevronDown, LucideCopy, LucideForm, LucideMaximize2 } from 'lucide-react'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { toast } from 'sonner'
 import { Badge } from '@/renderer/src/components/ui/badge'
@@ -15,6 +15,7 @@ export function ResponsePanel() {
   const { response, loading, updateResponseBody } = useRequest()
   const [b64, setB64] = useState<string | null>(null)
   const [zpl, setZpl] = useState<string | null>(null)
+  const [expandedEditor, setExpandedEditor] = useState<boolean>(false)
 
   useEffect(() => {
     if (!response?.body) return
@@ -22,6 +23,7 @@ export function ResponsePanel() {
     if (b64) setB64(b64)
     const zpl = b64 ? getZplFromBase64(b64) : null
     if (zpl) setZpl(zpl)
+    setExpandedEditor(false)
   }, [response?.body])
 
   const handleFormat = useCallback(() => {
@@ -62,15 +64,20 @@ export function ResponsePanel() {
           {response.status} {response.statusText}
         </Badge>
       </div>
-      <div className="min-h-0 relative">
+      <div className="relative">
         <CodeEditor
           value={body}
           onChange={() => { }}
           language="xml"
           readOnly
-          minHeight="20rem"
+          minHeight={expandedEditor ? '20rem' : '6rem'}
         />
-        <ButtonGroup className='absolute top-2 right-2'>
+        {!expandedEditor && (
+          <div className='absolute top-0 left-0 h-full w-full bg-linear-to-b from-transparent to-white/90 rounded-md z-10 cursor-pointer flex items-end justify-center gap-2' onClick={() => setExpandedEditor(!expandedEditor)}>
+            <LucideChevronDown className='size-4' />
+          </div>
+        )}
+        <ButtonGroup className='absolute top-2 right-2 z-20'>
           {canFormat && (
             <Button variant="outline" size="xs" onClick={handleFormat}>
               <LucideForm /> Format
@@ -79,6 +86,15 @@ export function ResponsePanel() {
           <Button variant="outline" size="xs" onClick={() => handleCopyToClipboard(body)}>
             <LucideCopy />
           </Button>
+          {expandedEditor && (
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => setExpandedEditor(false)}
+            >
+              <LucideChevronDown className="rotate-180" /> Collapse
+            </Button>
+          )}
         </ButtonGroup>
       </div>
       {faultSummary && (
@@ -88,23 +104,23 @@ export function ResponsePanel() {
         </span>
       )}
       {!response.error && !faultSummary && response.body && (
-        <>
-        <Label htmlFor='b64-input'>Base64:</Label>
-        <div className='relative'>
-        <Input id='b64-input' value={b64 ?? ''} readOnly className='w-full' />
-        <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(b64 ?? '')}>
-          <LucideCopy /> Copy
-        </Button>
+        <div className='flex flex-col gap-2 mt-2'>
+          <Label htmlFor='b64-input'>Base64:</Label>
+          <div className='relative'>
+            <Input id='b64-input' value={b64 ?? ''} readOnly className='w-full' />
+            <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(b64 ?? '')}>
+              <LucideCopy /> Copy
+            </Button>
+          </div>
+
+          <Label htmlFor='zpl-input'>ZPL:</Label>
+          <div className='relative'>
+            <Input id='zpl-input' value={zpl ?? ''} readOnly className='w-full' />
+            <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(zpl ?? '')}>
+              <LucideCopy /> Copy
+            </Button>
+          </div>
         </div>
-        
-        <Label htmlFor='zpl-input'>ZPL:</Label>
-        <div className='relative'>
-          <Input id='zpl-input' value={zpl ?? ''} readOnly className='w-full' />
-          <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(zpl ?? '')}>
-            <LucideCopy /> Copy
-          </Button>
-        </div>
-        </>
       )}
     </div>
   )

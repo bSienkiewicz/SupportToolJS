@@ -121,11 +121,11 @@ export function ResponsePanel() {
           {!response.error && (<span className='font-bold'>{faultSummary}</span>)}
         </span>
       )}
-      {!response.error && !faultSummary && response.body && (
+      {!response.error && !faultSummary && b64 && zpl && (
         <div className='flex flex-col gap-2 mt-2'>
           <Label htmlFor='b64-input'>Base64:</Label>
           <div className='relative'>
-            <Input id='b64-input' value={b64 ?? ''} readOnly className='w-full' />
+            <Input id='b64-input' value={b64} readOnly className='w-full' />
             <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(b64 ?? '')}>
               <LucideCopy /> Copy
             </Button>
@@ -133,7 +133,7 @@ export function ResponsePanel() {
 
           <Label htmlFor='zpl-input'>Decoded:</Label>
           <div className='relative'>
-            <Input id='zpl-input' value={zpl ?? ''} readOnly className='w-full' />
+            <Input id='zpl-input' value={zpl} readOnly className='w-full' />
             <Button variant="default" className='absolute top-1.5 right-1.5' size="xs" onClick={() => handleCopyToClipboard(zpl ?? '')}>
               <LucideCopy /> Copy
             </Button>

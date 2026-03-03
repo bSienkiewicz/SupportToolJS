@@ -57,22 +57,26 @@ export function RequestEditor({ apiType, requestType, selectedStack }: RequestEd
     if (parsed) setFormValues((prev) => ({ ...EMPTY_FORM, ...prev, ...parsed }))
   }, [apiType, requestBody, requestType])
 
-  // Build REST URL when form or stack changes (REST REPRINT only)
+  // Build REST URL when api type, method, stack or (for REPRINT) form changes
   useEffect(() => {
-    if (apiType !== 'REST' || requestType !== 'REPRINT') return
-    const firstDmc = (formValues.dmc ?? '').split(',')[0]?.trim() || ''
-    const restUrl = getRestEndpointUrl(
-      selectedStack,
-      'REPRINT',
-      { consignmentCode: firstDmc },
-      {
-        dimension: formValues.dimension ?? '',
-        format: formValues.format ?? '',
-        type: formValues.type ?? '',
-        resolution: formValues.dpi ?? '',
-      }
-    )
-    setUrl(restUrl)
+    if (apiType !== 'REST') return
+    if (requestType === 'REPRINT') {
+      const firstDmc = (formValues.dmc ?? '').split(',')[0]?.trim() || ''
+      const restUrl = getRestEndpointUrl(
+        selectedStack,
+        'REPRINT',
+        { consignmentCode: firstDmc },
+        {
+          dimension: formValues.dimension ?? '',
+          format: formValues.format ?? '',
+          type: formValues.type ?? '',
+          resolution: formValues.dpi ?? '',
+        }
+      )
+      setUrl(restUrl)
+    } else {
+      setUrl(getRestEndpointUrl(selectedStack, 'CREATE_CONSIGNMENT'))
+    }
   }, [apiType, requestType, selectedStack, formValues, setUrl])
 
   const handleFormChange = useCallback(
@@ -108,8 +112,8 @@ export function RequestEditor({ apiType, requestType, selectedStack }: RequestEd
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
       />
-      {isReprint && (
-        <div className="shrink-0 border-b bg-muted/30 px-4 py-3 space-y-3">
+      <div className="shrink-0 border-b bg-muted/30 px-4 py-3 space-y-3">
+        {isReprint ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="req-dmc">DMCs</Label>
@@ -136,8 +140,12 @@ export function RequestEditor({ apiType, requestType, selectedStack }: RequestEd
               )
             )}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Create Consignment: edit the request body in the editor below. No extra parameters for this method.
+          </p>
+        )}
+      </div>
       <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
         {apiType === 'REST' ? (
           <p className="text-sm text-muted-foreground py-2">

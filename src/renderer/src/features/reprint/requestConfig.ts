@@ -44,7 +44,7 @@ export const METHOD_ENDPOINTS: Record<
     soap: { urlTemplate: string }
     rest: {
       urlTemplate: string
-      method: 'GET'
+      method: 'GET' | 'POST'
       /** Path params in template, e.g. ['consignmentCode']. */
       pathParams?: string[]
       /** Query param names for GET (e.g. dimension, format, type, resolution). */
@@ -62,10 +62,10 @@ export const METHOD_ENDPOINTS: Record<
     },
   },
   CREATE_CONSIGNMENT: {
-    soap: { urlTemplate: 'https://{host}/dm/services/ConsignmentService2' },
+    soap: { urlTemplate: 'https://{host}/dm/services/ConsignmentService' },
     rest: {
       urlTemplate: 'https://{host}/shipping/v1/consignments',
-      method: 'GET',
+      method: 'POST',
     },
   },
 }

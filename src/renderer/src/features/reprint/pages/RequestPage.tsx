@@ -97,7 +97,7 @@ export default function RequestPage() {
     <div className="flex flex-col h-full">
       <RequestHeader requestType={requestType} setRequestType={setRequestType} />
       <ResizablePanelGroup className="flex-1 min-h-0">
-        <ResizablePanel defaultSize={50} minSize={25} className="min-h-0">
+        <ResizablePanel defaultSize={50} minSize={25} className="min-h-0 overflow-hidden">
           <RequestEditor requestType={requestType} />
         </ResizablePanel>
         <ResizableHandle withHandle />

@@ -15,7 +15,7 @@ export const STACK_HOST_MAP: Record<string, string> = {
   DM6: 'dm6.metapack.com',
   DM8: 'dm8.metapack.com',
   DMASOS: 'asos.dm',
-  DELTA: 'delta.metapack.com',
+  DELTA: 'dm-delta.metapack.com',
 }
 
 export type RequestMethod = 'REPRINT' | 'CREATE_CONSIGNMENT'

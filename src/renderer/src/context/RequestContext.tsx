@@ -10,6 +10,7 @@ import {
   sendRequest as sendRequestApi,
   type RequestCredentials,
 } from '@/renderer/src/features/reprint/requestConfig'
+import { formatXml } from '@/renderer/src/features/reprint/xmlUtils'
 
 type RequestContextValue = {
   url: string
@@ -17,6 +18,7 @@ type RequestContextValue = {
   requestBody: string
   setRequestBody: (body: string) => void
   response: SendRequestResult | null
+  updateResponseBody: (body: string) => void
   loading: boolean
   sendRequest: (credentials?: RequestCredentials | null) => Promise<void>
 }
@@ -36,13 +38,21 @@ export function RequestProvider({ children }: { children: ReactNode }) {
       setResponse(null)
       try {
         const result = await sendRequestApi(url, requestBody, credentials)
-        setResponse(result)
+        const body =
+          result.body?.trim() && !result.error
+            ? formatXml(result.body)
+            : result.body
+        setResponse({ ...result, body })
       } finally {
         setLoading(false)
       }
     },
     [url, requestBody]
   )
+
+  const updateResponseBody = useCallback((body: string) => {
+    setResponse((prev) => (prev ? { ...prev, body } : null))
+  }, [])
 
   return (
     <RequestContext.Provider
@@ -52,6 +62,7 @@ export function RequestProvider({ children }: { children: ReactNode }) {
         requestBody,
         setRequestBody,
         response,
+        updateResponseBody,
         loading,
         sendRequest,
       }}

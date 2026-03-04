@@ -62,9 +62,6 @@ importers:
       xml-formatter:
         specifier: ^3.6.7
         version: 3.6.7
-      zpl-renderer-js:
-        specifier: ^3.2.2
-        version: 3.2.2
     devDependencies:
       '@electron-toolkit/eslint-config-prettier':
         specifier: ^3.0.0
@@ -4082,9 +4079,6 @@ packages:
 
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
-
-  zpl-renderer-js@3.2.2:
-    resolution: {integrity: sha512-LBncHpu3afe7R+P/GKcEGJADo6qv/qs2fpbLP54Dfn13o7LHwzesLasfPvCvS5nWVa8V19UQyIQpd8ff34i1pQ==}
 
 snapshots:
 
@@ -8679,5 +8673,3 @@ snapshots:
       zod: 4.3.6
 
   zod@4.3.6: {}
-
-  zpl-renderer-js@3.2.2: {}

@@ -46,7 +46,6 @@ export function RequestEditor({ apiType, requestType, selectedStack }: RequestEd
     }
   }, [apiType, requestType, setRequestBody])
 
-  // Sync editor body -> form when user edits XML (SOAP REPRINT only)
   useEffect(() => {
     if (skipSyncFromFormRef.current) {
       skipSyncFromFormRef.current = false
@@ -57,7 +56,6 @@ export function RequestEditor({ apiType, requestType, selectedStack }: RequestEd
     if (parsed) setFormValues((prev) => ({ ...EMPTY_FORM, ...prev, ...parsed }))
   }, [apiType, requestBody, requestType])
 
-  // Build REST URL when api type, method, stack or (for REPRINT) form changes
   useEffect(() => {
     if (apiType !== 'REST') return
     if (requestType === 'REPRINT') {

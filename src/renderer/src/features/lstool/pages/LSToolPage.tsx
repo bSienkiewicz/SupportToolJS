@@ -16,7 +16,7 @@ import type {
   OpeningTimesData,
 } from '../types'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'
-import { LucideSearch } from 'lucide-react'
+import { LucideCopy, LucideSearch } from 'lucide-react'
 
 const LSToolPage = () => {
   const { setFooter } = useFooter()
@@ -375,28 +375,38 @@ const LSToolPage = () => {
         onPasswordBlur={handlePasswordBlur}
       />
       <div className='p-4 flex flex-col gap-3 flex-1 min-h-0'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <div className='space-y-2'>
+        <div className='flex gap-4'>
+          <div className='space-y-2 flex-1'>
             <Label>Location Provider ID</Label>
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => {
-                setProviderDialogOpen(true)
-                if (!providers.length) {
-                  void loadProviders()
-                }
-              }}
-            >
-              <span className="truncate text-left">
-                {(() => {
-                  const current = providers.find((p) => p.id === locationProviderId)
-                  if (current) return `${current.name} (${current.id})`
-                  if (locationProviderId) return locationProviderId
-                  return 'Select location provider'
-                })()}
-              </span>
-            </Button>
+            <div className="flex gap-2 flex-1">
+              <Button
+                variant="outline"
+                className="justify-between flex-1"
+                onClick={() => {
+                  setProviderDialogOpen(true)
+                  if (!providers.length) {
+                    void loadProviders()
+                  }
+                }}
+              >
+                <span className="truncate text-left">
+                  {(() => {
+                    const current = providers.find((p) => p.id === locationProviderId)
+                    if (current) return `${current.name} (${current.id})`
+                    if (locationProviderId) return locationProviderId
+                    return 'Select location provider'
+                  })()}
+                </span>
+              </Button>
+              <Button variant="outline" onClick={() => {
+                if (!locationProviderId) return
+                const text = locationProviderId
+                void navigator.clipboard.writeText(text)
+                toast.success(`${text} copied`)
+              }} disabled={!locationProviderId}>
+                <LucideCopy /> Copy provider ID
+              </Button>
+            </div>
           </div>
           <div className='space-y-2'>
             <Label>Country</Label>

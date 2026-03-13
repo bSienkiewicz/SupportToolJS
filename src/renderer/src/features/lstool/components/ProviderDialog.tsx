@@ -39,7 +39,10 @@ export function ProviderDialog({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
-          {filteredProviders.map((p) => (
+          {filteredProviders
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((p) => (
             <button
               key={p.id}
               type="button"

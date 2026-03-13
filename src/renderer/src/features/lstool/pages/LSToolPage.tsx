@@ -231,6 +231,14 @@ const LSToolPage = () => {
     })
   }, [providers, providerSearch])
 
+  const sortedCountries = useMemo(
+    () =>
+      [...countries].sort((a, b) =>
+        a.countryCode.localeCompare(b.countryCode, undefined, { sensitivity: 'base' }),
+      ),
+    [countries],
+  )
+
   async function ensureTokenAndFetch(path: string): Promise<any> {
     let token = accessToken
     if (!token) {
@@ -441,7 +449,7 @@ const LSToolPage = () => {
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="all">All countries</SelectItem>
-                  {countries.map((c) => (
+                  {sortedCountries.map((c) => (
                     <SelectItem key={c.countryCode} value={c.countryCode}>
                       {c.countryCode} ({c.numberOfLocations})
                     </SelectItem>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/renderer/src/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/renderer/src/components/ui/dialog'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Button } from '@/renderer/src/components/ui/button'
 import type { DdoLocation } from '../types'
@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Badge } from '@/renderer/src/components/ui/badge'
 import { LucideTag } from 'lucide-react'
+import { LocationMap } from './LocationMap'
 
 type LocationDetailsDialogProps = {
   open: boolean
@@ -32,7 +33,7 @@ export function LocationDetailsDialog({
     >
       <DialogContent showCloseButton className="min-w-3xl max-w-5xl">
         <DialogHeader>
-          <DialogTitle>{location?.storeName ?? 'Location details'}</DialogTitle>
+          <DialogTitle>{location?.storeName}</DialogTitle>
           <DialogDescription>
             {location?.storeId && (
               <span>Store ID: {location.storeId} · </span>
@@ -75,17 +76,17 @@ export function LocationDetailsDialog({
                     `, ${location.structuredAddress?.countryCode ?? location.countryCode}`}
                 </div>
                 <div className="space-y-1">
-                <span className="font-semibold">Location type:</span>{' '}
-                {location.locationType ?? '—'}
-              </div>
-              <div className="space-y-1">
-                <span className="font-semibold">Cash on delivery:</span>{' '}
-                {location.cashOnDelivery ? 'Yes' : 'No'}
-              </div>
-              <div className="space-y-1">
-                <span className="font-semibold">Drop off:</span>{' '}
-                {location.dropOff ? 'Yes' : 'No'}
-              </div>
+                  <span className="font-semibold">Location type:</span>{' '}
+                  {location.locationType ?? '—'}
+                </div>
+                <div className="space-y-1">
+                  <span className="font-semibold">Cash on delivery:</span>{' '}
+                  {location.cashOnDelivery ? 'Yes' : 'No'}
+                </div>
+                <div className="space-y-1">
+                  <span className="font-semibold">Drop off:</span>{' '}
+                  {location.dropOff ? 'Yes' : 'No'}
+                </div>
               </div>
             </div>
 
@@ -102,15 +103,26 @@ export function LocationDetailsDialog({
                       <LucideTag />
                       {tag}
                     </Badge>
-                    ))}
+                  ))}
                 </div>
               </div>
             )}
 
             <div className="mt-2">
               <Label>Map</Label>
-              <div className="mt-2 h-56 w-full rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 flex items-center justify-center text-xs text-muted-foreground">
-                Map preview will appear here for the selected coordinates.
+              <div className="mt-2 shrink-0">
+                {open &&
+                  location.latitude != null &&
+                  location.longitude != null && (
+                    <LocationMap
+                      key={location.id}
+                      center={[location.latitude, location.longitude]}
+                      zoom={13}
+                      popupContent={
+                        location.storeName ?? location.address ?? 'Location'
+                      }
+                    />
+                  )}
               </div>
             </div>
 

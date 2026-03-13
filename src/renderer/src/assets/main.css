@@ -127,6 +127,11 @@
   max-width: none !important;
 }
 
+/* Keep map below dialogs (Radix/shadcn dialogs use z-index 50+) */
+.leaflet-container {
+  z-index: 0;
+}
+
 .titlebar {
   height: 30px;
   border-bottom: 1px solid #e0e0e0;

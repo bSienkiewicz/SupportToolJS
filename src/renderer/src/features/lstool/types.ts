@@ -71,3 +71,10 @@ export type LocationProvider = {
   links: unknown[]
 }
 
+export type Retailer = {
+  id: string
+  name: string
+  details: unknown
+  links: unknown[]
+}
+

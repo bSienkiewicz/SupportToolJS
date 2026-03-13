@@ -3,30 +3,26 @@ import { Button } from '@/renderer/src/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/renderer/src/components/ui/sheet'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Input } from '@/renderer/src/components/ui/input'
+import { useLSToolCredentials } from '../context/LSToolCredentialsContext'
 
-type LSToolHeaderProps = {
-  login: string
-  password: string
-  onLoginChange: (value: string) => void
-  onPasswordChange: (value: string) => void
-  onLoginBlur: (value: string) => void
-  onPasswordBlur: (value: string) => void
-}
-
-const LSToolHeader = ({
-  login,
-  password,
-  onLoginChange,
-  onPasswordChange,
-  onLoginBlur,
-  onPasswordBlur,
-}: LSToolHeaderProps) => {
+const LSToolHeader = ({ title }: { title: string }) => {
+  const { login, password, setLogin, setPassword, persistCredentials } = useLSToolCredentials()
   const [open, setOpen] = useState(false)
+
+  const handleLoginBlur = (value: string) => {
+    setLogin(value)
+    void persistCredentials(value, password)
+  }
+
+  const handlePasswordBlur = (value: string) => {
+    setPassword(value)
+    void persistCredentials(login, value)
+  }
 
   return (
     <>
       <header className="border-b pb-4 px-4 flex flex-wrap justify-between items-center gap-3 shrink-0">
-        <h1 className="text-xl font-bold">LS Tool</h1>
+        <h1 className="text-xl font-bold">{title}</h1>
         <Sheet open={open} onOpenChange={setOpen}>
           <Button
             variant="outline"
@@ -49,8 +45,8 @@ const LSToolHeader = ({
                 <Input
                   id="ddo-client-id"
                   value={login}
-                  onChange={(e) => onLoginChange(e.target.value)}
-                  onBlur={(e) => onLoginBlur(e.target.value)}
+                  onChange={(e) => setLogin(e.target.value)}
+                  onBlur={(e) => handleLoginBlur(e.target.value)}
                   autoComplete="off"
                 />
               </div>
@@ -60,8 +56,8 @@ const LSToolHeader = ({
                   id="ddo-client-secret"
                   type="password"
                   value={password}
-                  onChange={(e) => onPasswordChange(e.target.value)}
-                  onBlur={(e) => onPasswordBlur(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={(e) => handlePasswordBlur(e.target.value)}
                   autoComplete="off"
                 />
               </div>

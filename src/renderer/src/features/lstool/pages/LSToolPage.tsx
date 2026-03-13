@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import LSToolHeader from '../components/LSToolHeader'
+import { useLSToolCredentials } from '../context/LSToolCredentialsContext'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Button } from '@/renderer/src/components/ui/button'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/renderer/src/components/ui/select'
@@ -38,8 +39,7 @@ function getLocationSearchableString(loc: DdoLocation): string {
 
 const LSToolPage = () => {
   const { setFooter } = useFooter()
-  const [login, setLogin] = useState<string>('')
-  const [password, setPassword] = useState<string>('')
+  const { login, password } = useLSToolCredentials()
   const [accessToken, setAccessToken] = useState<string>('')
   const [locationProviderId, setLocationProviderId] = useState<string>('')
   const [locations, setLocations] = useState<DdoLocation[]>([])
@@ -69,25 +69,6 @@ const LSToolPage = () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
     }
   }, [search])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      const config = await window.api.getConfig()
-      if (cancelled) return
-      setLogin(config.ddoClientId ?? '')
-      setPassword(config.ddoClientSecret ?? '')
-    }
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const persistCredentials = async (nextLogin: string, nextPassword: string) => {
-    await window.api.setConfigValue('ddoClientId', nextLogin)
-    await window.api.setConfigValue('ddoClientSecret', nextPassword)
-  }
 
   const requestToken = async (): Promise<string> => {
     const credentials = btoa(`${login}:${password}`)
@@ -179,16 +160,6 @@ const LSToolPage = () => {
     },
     [accessToken, fetchLocations, login, password],
   )
-
-  const handleLoginBlur = async (value: string) => {
-    setLogin(value)
-    await persistCredentials(value, password)
-  }
-
-  const handlePasswordBlur = async (value: string) => {
-    setPassword(value)
-    await persistCredentials(login, value)
-  }
 
   const searchableByIndex = useMemo(
     () => locations.map(getLocationSearchableString),
@@ -395,14 +366,7 @@ const LSToolPage = () => {
 
   return (
     <div className='flex flex-col h-full'>
-      <LSToolHeader
-        login={login}
-        password={password}
-        onLoginChange={setLogin}
-        onPasswordChange={setPassword}
-        onLoginBlur={handleLoginBlur}
-        onPasswordBlur={handlePasswordBlur}
-      />
+      <LSToolHeader title="LS Tool" />
       <div className='p-4 flex flex-col gap-3 flex-1 min-h-0'>
         <div className='flex gap-4'>
           <div className='space-y-2 flex-1'>

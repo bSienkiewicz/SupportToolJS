@@ -142,7 +142,7 @@ export function LocationsList({
   if (!locations.length) return null
 
   return (
-    <div className="mt-4 flex-1 min-h-0 flex flex-col">
+    <div className="flex-1 min-h-0 flex flex-col">
       <Label>Locations ({locations.length})</Label>
       <div className="mt-2 flex-1 min-h-0 min-w-0">
         <Virtuoso

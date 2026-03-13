@@ -54,8 +54,8 @@ export function LocationDetailsDialog({
                   {location.storeId ?? '—'}
                 </div>
                 <div>
-                  <span className="font-semibold">Location ID:</span>{' '}
-                  {location.id}
+                  <span className="font-semibold">Location Provider ID:</span>{' '}
+                  {location.locationProvider?.id ?? '—'}
                 </div>
                 {(location.latitude != null || location.longitude != null) && (
                   <div>

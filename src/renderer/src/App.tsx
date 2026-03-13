@@ -9,7 +9,9 @@ import { RequestProvider } from '@/renderer/src/context/RequestContext'
 import AlertAudit from '@/renderer/src/features/alerts/pages/AlertAudit'
 import { TooltipProvider } from '@/renderer/src/components/ui/tooltip'
 import RequestPage from './features/reprint/pages/RequestPage'
+import { LSToolCredentialsProvider } from './features/lstool/context/LSToolCredentialsContext'
 import LSToolPage from './features/lstool/pages/LSToolPage'
+import LSToolNearbyPage from './features/lstool/pages/LSToolNearbyPage'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)
@@ -43,7 +45,12 @@ function App(): React.JSX.Element {
             {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
             {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
             {page === ROUTES.DM_REQUESTS && <RequestPage />}
-            {page === ROUTES.LSTOOL && <LSToolPage />}
+            {(page === ROUTES.LSTOOL_LOCATIONS || page === ROUTES.LSTOOL_NEARBY) && (
+              <LSToolCredentialsProvider>
+                {page === ROUTES.LSTOOL_LOCATIONS && <LSToolPage />}
+                {page === ROUTES.LSTOOL_NEARBY && <LSToolNearbyPage />}
+              </LSToolCredentialsProvider>
+            )}
             <Toaster />
           </main>
           <FooterSlot />

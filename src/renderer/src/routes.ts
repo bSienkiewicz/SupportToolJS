@@ -13,6 +13,7 @@ export const NAV = [
     ],
   },
   { key: 'DM_REQUESTS', label: 'DM Requests', path: '/dm-requests' },
+  { key: 'LSTOOL', label: 'LS Tool', path: '/lstool' },
 ] as const
 
 export const SETTINGS_PATH = '/settings'
@@ -50,5 +51,6 @@ export const ROUTES = ROUTES_BUILD as {
   ALERTS_MANAGEMENT: '/alerts-management'
   ALERTS_AUDIT: '/alerts-audit'
   DM_REQUESTS: '/dm-requests'
+  LSTOOL: '/lstool'
   SETTINGS: '/settings'
 }

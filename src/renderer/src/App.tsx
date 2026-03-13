@@ -9,6 +9,7 @@ import { RequestProvider } from '@/renderer/src/context/RequestContext'
 import AlertAudit from '@/renderer/src/features/alerts/pages/AlertAudit'
 import { TooltipProvider } from '@/renderer/src/components/ui/tooltip'
 import RequestPage from './features/reprint/pages/RequestPage'
+import LSToolPage from './features/lstool/pages/LSToolPage'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)
@@ -42,6 +43,7 @@ function App(): React.JSX.Element {
             {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
             {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
             {page === ROUTES.DM_REQUESTS && <RequestPage />}
+            {page === ROUTES.LSTOOL && <LSToolPage />}
             <Toaster />
           </main>
           <FooterSlot />

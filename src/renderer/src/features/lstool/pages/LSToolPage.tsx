@@ -323,6 +323,19 @@ const LSToolPage = () => {
           variant="outline"
           size="xs"
           onClick={() => {
+            if (!filteredLocations.length) return
+            const text = JSON.stringify(filteredLocations, null, 2)
+            void navigator.clipboard.writeText(text)
+            toast.success('Filtered locations JSON copied')
+          }}
+          disabled={!filteredLocations.length}
+        >
+          Copy filtered
+        </Button>
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => {
             if (!locations.length) return
             const text = JSON.stringify(locations, null, 2)
             void navigator.clipboard.writeText(text)
@@ -330,7 +343,7 @@ const LSToolPage = () => {
           }}
           disabled={!locations.length}
         >
-          Copy JSON
+          Copy raw JSON
         </Button>
         <Button
           variant="default"
@@ -349,7 +362,7 @@ const LSToolPage = () => {
       </div>,
     )
     return () => setFooter(null)
-  }, [setFooter, handleFetchLocations, isLoading, error])
+  }, [setFooter, handleFetchLocations, isLoading, error, locations, filteredLocations])
 
   return (
     <div className='flex flex-col h-full'>

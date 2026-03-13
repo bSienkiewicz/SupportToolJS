@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import LSToolHeader from '../components/LSToolHeader'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Button } from '@/renderer/src/components/ui/button'
@@ -17,6 +17,24 @@ import type {
 } from '../types'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'
 import { LucideCopy, LucideSearch } from 'lucide-react'
+
+const SEARCH_DEBOUNCE_MS = 200
+
+function getLocationSearchableString(loc: DdoLocation): string {
+  const parts = [
+    loc.storeName,
+    loc.storeId,
+    loc.address,
+    loc.structuredAddress?.street,
+    loc.structuredAddress?.city,
+    loc.structuredAddress?.postCode,
+    loc.structuredAddress?.countryCode,
+    loc.city,
+    loc.postCode,
+    loc.countryCode,
+  ]
+  return parts.filter(Boolean).join(' ').toLowerCase()
+}
 
 const LSToolPage = () => {
   const { setFooter } = useFooter()
@@ -38,6 +56,19 @@ const LSToolPage = () => {
   const [providerSearch, setProviderSearch] = useState<string>('')
   const [countries, setCountries] = useState<CountrySummary[]>([])
   const [selectedCountry, setSelectedCountry] = useState<string>('all')
+  const [searchDebounced, setSearchDebounced] = useState<string>('')
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchDebounced(search)
+      searchDebounceRef.current = null
+    }, SEARCH_DEBOUNCE_MS)
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    }
+  }, [search])
 
   useEffect(() => {
     let cancelled = false
@@ -152,12 +183,17 @@ const LSToolPage = () => {
     await persistCredentials(login, value)
   }
 
+  const searchableByIndex = useMemo(
+    () => locations.map(getLocationSearchableString),
+    [locations],
+  )
+
   const filteredLocations = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const term = searchDebounced.trim().toLowerCase()
     const hasCountryFilter = selectedCountry !== 'all'
     const selectedUpper = selectedCountry.toUpperCase()
 
-    return locations.filter((loc) => {
+    return locations.filter((loc, i) => {
       if (hasCountryFilter) {
         const locCountry = String(
           loc.structuredAddress?.countryCode ?? loc.countryCode ?? '',
@@ -173,32 +209,10 @@ const LSToolPage = () => {
           return false
         }
       }
-
       if (!term) return true
-      const name = String(loc.storeName ?? '').toLowerCase()
-      const id = String(loc.storeId ?? '').toLowerCase()
-      const address = String(loc.address ?? '').toLowerCase()
-      const street = String(loc.structuredAddress?.street ?? '').toLowerCase()
-      const city = String(
-        loc.structuredAddress?.city ?? (loc as any).city ?? '',
-      ).toLowerCase()
-      const postCode = String(
-        loc.structuredAddress?.postCode ?? (loc as any).postCode ?? '',
-      ).toLowerCase()
-      const countryCode = String(
-        loc.structuredAddress?.countryCode ?? loc.countryCode ?? '',
-      ).toLowerCase()
-      return (
-        name.includes(term) ||
-        id.includes(term) ||
-        address.includes(term) ||
-        street.includes(term) ||
-        city.includes(term) ||
-        postCode.includes(term) ||
-        countryCode.includes(term)
-      )
+      return searchableByIndex[i]?.includes(term) ?? false
     })
-  }, [locations, search, selectedCountry])
+  }, [locations, searchDebounced, selectedCountry, searchableByIndex])
 
   const filteredProviders = useMemo(() => {
     const term = providerSearch.trim().toLowerCase()

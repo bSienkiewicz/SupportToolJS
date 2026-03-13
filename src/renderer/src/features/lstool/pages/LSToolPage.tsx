@@ -118,60 +118,67 @@ const LSToolPage = () => {
     return token
   }
 
-  const fetchLocations = async (token: string) => {
-    const params = new URLSearchParams({
-      location_provider_id: locationProviderId,
-    })
+  const fetchLocations = useCallback(
+    async (token: string, providerIdOverride?: string) => {
+      const providerId = providerIdOverride ?? locationProviderId
+      const params = new URLSearchParams({
+        location_provider_id: providerId,
+      })
 
-    const response = await fetch(
-      `https://ddo.metapack.com/locations/?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `https://ddo.metapack.com/locations/?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    )
+      )
 
-    if (response.status === 401) {
-      throw new Error('UNAUTHORIZED')
-    }
-
-    if (!response.ok) {
-      throw new Error(`Locations request failed with status ${response.status}`)
-    }
-
-    const data = await response.json()
-    setLocations(Array.isArray(data) ? (data as DdoLocation[]) : [])
-  }
-
-  const handleFetchLocations = useCallback(async () => {
-    setError(null)
-    setIsLoading(true)
-
-    try {
-      let token = accessToken
-      if (!token) {
-        token = await requestToken()
+      if (response.status === 401) {
+        throw new Error('UNAUTHORIZED')
       }
+
+      if (!response.ok) {
+        throw new Error(`Locations request failed with status ${response.status}`)
+      }
+
+      const data = await response.json()
+      setLocations(Array.isArray(data) ? (data as DdoLocation[]) : [])
+    },
+    [locationProviderId],
+  )
+
+  const handleFetchLocations = useCallback(
+    async (providerIdOverride?: string) => {
+      setError(null)
+      setIsLoading(true)
 
       try {
-        await fetchLocations(token)
-      } catch (err) {
-        if (err instanceof Error && err.message === 'UNAUTHORIZED') {
-          const newToken = await requestToken()
-          await fetchLocations(newToken)
-        } else {
-          throw err
+        let token = accessToken
+        if (!token) {
+          token = await requestToken()
         }
+
+        try {
+          await fetchLocations(token, providerIdOverride)
+        } catch (err) {
+          if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+            const newToken = await requestToken()
+            await fetchLocations(newToken, providerIdOverride)
+          } else {
+            throw err
+          }
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Unexpected error while fetching locations'
+        setError(message)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Unexpected error while fetching locations'
-      setError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [accessToken, locationProviderId, selectedCountry, login, password])
+    },
+    [accessToken, fetchLocations, login, password],
+  )
 
   const handleLoginBlur = async (value: string) => {
     setLogin(value)
@@ -459,6 +466,7 @@ const LSToolPage = () => {
         </div>
 
         <LocationsList
+          key={locationProviderId || 'none'}
           locations={filteredLocations}
           openingTimes={openingTimes}
           openingTimesLoading={openingTimesLoading}
@@ -482,9 +490,11 @@ const LSToolPage = () => {
         onSelectProvider={(providerId) => {
           setLocationProviderId(providerId)
           setSelectedCountry('all')
+          setSearch('')
           setLocations([])
           void loadCountriesForProvider(providerId)
           setProviderDialogOpen(false)
+          void handleFetchLocations(providerId)
         }}
       />
       <LocationDetailsDialog

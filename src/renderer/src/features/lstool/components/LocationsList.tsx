@@ -5,7 +5,7 @@ import { Button } from '@/renderer/src/components/ui/button'
 import type { DdoLocation, OpeningTimesData } from '../types'
 import { toast } from 'sonner'
 import { Badge } from '@/renderer/src/components/ui/badge'
-import { LucideCopy, LucideHome, LucideMapPin, LucideTag } from 'lucide-react'
+import { LucideCopy, LucideHome, LucideMapPin, LucideTag, LucideVan } from 'lucide-react'
 
 type LocationsListProps = {
   locations: DdoLocation[]
@@ -34,6 +34,9 @@ function LocationCard({
   const openingLink = Array.isArray(loc.links)
     ? loc.links.find((l: { rel: string }) => l.rel === 'openingTimesRules')
     : null
+  const embeddedRules = (loc as { locationOpeningTimesRules?: { openingTimesRules?: OpeningTimesData['openingTimesRules'] } }).locationOpeningTimesRules?.openingTimesRules
+  const effectiveOpeningData = openingData ?? (embeddedRules && embeddedRules.length > 0 ? { openingTimesRules: embeddedRules } : undefined)
+  const showOpeningSection = openingLink != null || effectiveOpeningData != null
 
   return (
     <div
@@ -47,7 +50,7 @@ function LocationCard({
         )}
       </div>
       <div className="text-xs text-gray-500 flex items-center gap-1">
-        <LucideTag size={16} /> {loc.locationType ?? '—'}
+        <LucideVan size={16} /> {loc.locationProvider?.name ?? loc.locationType ?? '—'}
       </div>
       <div className="text-xs text-gray-600 flex items-center gap-1">
         <LucideHome size={16} />
@@ -92,9 +95,9 @@ function LocationCard({
         <LucideCopy />
         Copy JSON
       </Button>
-      {openingLink && (
+      {showOpeningSection && (
         <div className="mt-2 space-y-1">
-          {!openingData && (
+          {!effectiveOpeningData && openingLink != null && (
             <Button
               variant="outline"
               size="xs"
@@ -110,9 +113,9 @@ function LocationCard({
           {openingErr && (
             <div className="text-xs text-red-600">{openingErr}</div>
           )}
-          {openingData && Array.isArray(openingData.openingTimesRules) && (
+          {effectiveOpeningData && Array.isArray(effectiveOpeningData.openingTimesRules) && (
             <div className="text-xs space-y-0.5">
-              {openingData.openingTimesRules.map((rule, idx) => (
+              {effectiveOpeningData.openingTimesRules.map((rule, idx) => (
                 <div key={idx}>
                   <span className="font-semibold">{rule.rule}:</span>{' '}
                   {Array.isArray(rule.openingClosingTimes) &&

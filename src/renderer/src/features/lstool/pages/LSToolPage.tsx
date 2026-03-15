@@ -330,6 +330,7 @@ const LSToolPage = () => {
           }}
           disabled={!filteredLocations.length}
         >
+          <LucideCopy />
           Copy filtered
         </Button>
         <Button
@@ -343,7 +344,8 @@ const LSToolPage = () => {
           }}
           disabled={!locations.length}
         >
-          Copy raw JSON
+          <LucideCopy />
+          Copy full LS JSON
         </Button>
         <Button
           variant="default"

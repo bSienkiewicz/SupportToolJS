@@ -5,7 +5,12 @@ import { Label } from '@/renderer/src/components/ui/label'
 import { Input } from '@/renderer/src/components/ui/input'
 import { useLSToolCredentials } from '../context/LSToolCredentialsContext'
 
-const LSToolHeader = ({ title }: { title: string }) => {
+type LSToolHeaderProps = {
+  title: string
+  nearbyType?: string
+}
+
+const LSToolHeader = ({ title, nearbyType }: LSToolHeaderProps) => {
   const { login, password, setLogin, setPassword, persistCredentials } = useLSToolCredentials()
   const [open, setOpen] = useState(false)
 

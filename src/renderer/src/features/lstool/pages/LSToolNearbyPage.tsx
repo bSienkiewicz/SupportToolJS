@@ -9,7 +9,7 @@ import { LocationsMapView } from '../components/LocationsMapView'
 import { LocationsList } from '../components/LocationsList'
 import { LocationDetailsDialog } from '../components/LocationDetailsDialog'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/renderer/src/components/ui/resizable'
-import type { DdoLocation, Retailer } from '../types'
+import type { DdoLocation, OpeningTimesData, Retailer } from '../types'
 import { toast } from 'sonner'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'
 import { LucideCopy, LucideSearch } from 'lucide-react'
@@ -49,6 +49,9 @@ const LSToolNearbyPage = () => {
   const [listSearch, setListSearch] = useState('')
   const [selectedLocation, setSelectedLocation] = useState<DdoLocation | null>(null)
   const [locationDialogOpen, setLocationDialogOpen] = useState(false)
+  const [openingTimes, setOpeningTimes] = useState<Record<string, OpeningTimesData | undefined>>({})
+  const [openingTimesLoading, setOpeningTimesLoading] = useState<Record<string, boolean>>({})
+  const [openingTimesError, setOpeningTimesError] = useState<Record<string, string | null>>({})
 
   const requestToken = useCallback(async (): Promise<string> => {
     const credentials = btoa(`${login}:${password}`)
@@ -79,6 +82,11 @@ const LSToolNearbyPage = () => {
           headers: { Authorization: `Bearer ${t}` },
         })
         if (res.status === 401) throw new Error('UNAUTHORIZED')
+        if (res.status === 404) {
+          const err = new Error('NOT_FOUND') as Error & { status?: number }
+          err.status = 404
+          throw err
+        }
         if (!res.ok) throw new Error(`Request failed with status ${res.status}`)
         return res.json()
       }
@@ -150,6 +158,33 @@ const LSToolNearbyPage = () => {
   }, [retailers, retailerSearch])
 
   const selectedRetailer = retailers.find((r) => r.id === retailerId)
+
+  const handleFetchOpeningTimes = useCallback(
+    async (location: DdoLocation, href: string) => {
+      const locId = String(location.id)
+      setOpeningTimesLoading((prev) => ({ ...prev, [locId]: true }))
+      setOpeningTimesError((prev) => ({ ...prev, [locId]: null }))
+      try {
+        const data = await ensureTokenAndFetch(href)
+        setOpeningTimes((prev) => ({ ...prev, [locId]: data as OpeningTimesData }))
+      } catch (err) {
+        if (err instanceof Error && (err as Error & { message?: string }).message === 'NOT_FOUND') {
+          const label = location.storeId ?? location.id
+          setOpeningTimesError((prev) => ({
+            ...prev,
+            [locId]: `No opening times found for ${label}`,
+          }))
+        } else {
+          const message =
+            err instanceof Error ? err.message : 'Failed to load opening times'
+          setOpeningTimesError((prev) => ({ ...prev, [locId]: message }))
+        }
+      } finally {
+        setOpeningTimesLoading((prev) => ({ ...prev, [locId]: false }))
+      }
+    },
+    [ensureTokenAndFetch],
+  )
 
   const listSearchLower = listSearch.trim().toLowerCase()
   const filteredLocationsForList = useMemo(() => {
@@ -270,14 +305,14 @@ const LSToolNearbyPage = () => {
                       ) : (
                         <LocationsList
                           locations={filteredLocationsForList}
-                          openingTimes={{}}
-                          openingTimesLoading={{}}
-                          openingTimesError={{}}
+                          openingTimes={openingTimes}
+                          openingTimesLoading={openingTimesLoading}
+                          openingTimesError={openingTimesError}
                           onSelectLocation={(loc) => {
                             setSelectedLocation(loc)
                             setLocationDialogOpen(true)
                           }}
-                          onFetchOpeningTimes={(_loc, _href) => {}}
+                          onFetchOpeningTimes={handleFetchOpeningTimes}
                         />
                       )}
                     </div>

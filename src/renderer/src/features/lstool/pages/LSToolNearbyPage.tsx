@@ -44,7 +44,7 @@ const LSToolNearbyPage = () => {
   const [postcode, setPostcode] = useState('')
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
-  const [range, setRange] = useState(DEFAULT_RANGE)
+  const [range, setRange] = useState(String(DEFAULT_RANGE))
   const [lastGeolocationSearch, setLastGeolocationSearch] = useState<{ lat: number; lng: number; radiusM: number } | null>(null)
   const [locations, setLocations] = useState<DdoLocation[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -121,25 +121,31 @@ const LSToolNearbyPage = () => {
     }
   }, [login, password, ensureTokenAndFetch])
 
-  const handleSearch = useCallback(async () => {
-    if (!retailerId.trim()) {
-      toast.error('Select a retailer first')
-      return
+  const rangeNum = range.trim() === '' ? NaN : Number(range.trim())
+  const isRangeValid = Number.isFinite(rangeNum) && rangeNum > 0
+  const isSearchDisabled = useMemo(() => {
+    if (!retailerId.trim()) return true
+    if (!isRangeValid) return true
+    if (searchType === 'postcode') {
+      return !countryCode.trim() || !postcode.trim()
     }
+    const lat = latitude.trim() === '' ? NaN : Number.parseFloat(latitude.trim())
+    const lon = longitude.trim() === '' ? NaN : Number.parseFloat(longitude.trim())
+    return !Number.isFinite(lat) || !Number.isFinite(lon)
+  }, [retailerId, searchType, countryCode, postcode, latitude, longitude, isRangeValid])
+
+  const handleSearch = useCallback(async () => {
+    if (isSearchDisabled) return
+    const radiusM = rangeNum
     setError(null)
     setIsLoading(true)
     setHasSearched(true)
     setLastGeolocationSearch(null)
     try {
       if (searchType === 'postcode') {
-        if (!countryCode.trim() || !postcode.trim()) {
-          toast.error('Enter country code (ISO3) and postcode')
-          setIsLoading(false)
-          return
-        }
         const params = new URLSearchParams({
           ret: retailerId,
-          radius: String(range),
+          radius: String(radiusM),
           postcode: postcode.trim(),
           countrycode: countryCode.trim(),
         })
@@ -148,20 +154,15 @@ const LSToolNearbyPage = () => {
       } else {
         const lat = Number.parseFloat(latitude.trim())
         const lon = Number.parseFloat(longitude.trim())
-        if (Number.isNaN(lat) || Number.isNaN(lon)) {
-          toast.error('Enter valid latitude and longitude')
-          setIsLoading(false)
-          return
-        }
         const params = new URLSearchParams({
           ret: retailerId,
-          radius: String(range),
+          radius: String(radiusM),
           lat: String(lat),
           lon: String(lon),
         })
         const data = await ensureTokenAndFetch(`/locations/?${params.toString()}`)
         setLocations(Array.isArray(data) ? (data as DdoLocation[]) : [])
-        setLastGeolocationSearch({ lat, lng: lon, radiusM: range })
+        setLastGeolocationSearch({ lat, lng: lon, radiusM })
       }
     } catch (err) {
       const message =
@@ -171,7 +172,7 @@ const LSToolNearbyPage = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [retailerId, searchType, countryCode, postcode, latitude, longitude, range, ensureTokenAndFetch])
+  }, [retailerId, searchType, countryCode, postcode, latitude, longitude, rangeNum, isSearchDisabled, ensureTokenAndFetch])
 
   const filteredRetailers = useMemo(() => {
     const term = retailerSearch.trim().toLowerCase()
@@ -308,13 +309,14 @@ const LSToolNearbyPage = () => {
             <Input
               type="number"
               min={1}
+              placeholder="e.g. 1000"
               value={range}
-              onChange={(e) => setRange(Number(e.target.value) || DEFAULT_RANGE)}
+              onChange={(e) => setRange(e.target.value)}
             />
           </div>
           <Button
             onClick={() => void handleSearch()}
-            disabled={isLoading}
+            disabled={isSearchDisabled || isLoading}
           >
             <LucideSearch className="size-4 mr-1" />
             {isLoading ? 'Searching…' : 'Search'}

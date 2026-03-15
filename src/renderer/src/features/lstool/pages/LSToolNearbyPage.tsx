@@ -39,9 +39,13 @@ const LSToolNearbyPage = () => {
   const [retailerId, setRetailerId] = useState<string>('')
   const [retailerDialogOpen, setRetailerDialogOpen] = useState(false)
   const [retailerSearch, setRetailerSearch] = useState('')
+  const [searchType, setSearchType] = useState<'postcode' | 'geolocation'>('postcode')
   const [countryCode, setCountryCode] = useState('')
   const [postcode, setPostcode] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
   const [range, setRange] = useState(DEFAULT_RANGE)
+  const [lastGeolocationSearch, setLastGeolocationSearch] = useState<{ lat: number; lng: number; radiusM: number } | null>(null)
   const [locations, setLocations] = useState<DdoLocation[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -122,22 +126,43 @@ const LSToolNearbyPage = () => {
       toast.error('Select a retailer first')
       return
     }
-    if (!countryCode.trim() || !postcode.trim()) {
-      toast.error('Enter country code (ISO3) and postcode')
-      return
-    }
     setError(null)
     setIsLoading(true)
     setHasSearched(true)
+    setLastGeolocationSearch(null)
     try {
-      const params = new URLSearchParams({
-        ret: retailerId,
-        radius: String(range),
-        postcode: postcode.trim(),
-        countrycode: countryCode.trim(),
-      })
-      const data = await ensureTokenAndFetch(`/locations/?${params.toString()}`)
-      setLocations(Array.isArray(data) ? (data as DdoLocation[]) : [])
+      if (searchType === 'postcode') {
+        if (!countryCode.trim() || !postcode.trim()) {
+          toast.error('Enter country code (ISO3) and postcode')
+          setIsLoading(false)
+          return
+        }
+        const params = new URLSearchParams({
+          ret: retailerId,
+          radius: String(range),
+          postcode: postcode.trim(),
+          countrycode: countryCode.trim(),
+        })
+        const data = await ensureTokenAndFetch(`/locations/?${params.toString()}`)
+        setLocations(Array.isArray(data) ? (data as DdoLocation[]) : [])
+      } else {
+        const lat = Number.parseFloat(latitude.trim())
+        const lon = Number.parseFloat(longitude.trim())
+        if (Number.isNaN(lat) || Number.isNaN(lon)) {
+          toast.error('Enter valid latitude and longitude')
+          setIsLoading(false)
+          return
+        }
+        const params = new URLSearchParams({
+          ret: retailerId,
+          radius: String(range),
+          lat: String(lat),
+          lon: String(lon),
+        })
+        const data = await ensureTokenAndFetch(`/locations/?${params.toString()}`)
+        setLocations(Array.isArray(data) ? (data as DdoLocation[]) : [])
+        setLastGeolocationSearch({ lat, lng: lon, radiusM: range })
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch nearby locations'
@@ -146,7 +171,7 @@ const LSToolNearbyPage = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [retailerId, countryCode, postcode, range, ensureTokenAndFetch])
+  }, [retailerId, searchType, countryCode, postcode, latitude, longitude, range, ensureTokenAndFetch])
 
   const filteredRetailers = useMemo(() => {
     const term = retailerSearch.trim().toLowerCase()
@@ -195,7 +220,11 @@ const LSToolNearbyPage = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <LSToolHeader title="Find Nearby Locations" />
+      <LSToolHeader
+        title="Find Nearby Locations"
+        nearbySearchType={searchType}
+        onNearbySearchTypeChange={setSearchType}
+      />
       <div className="p-4 flex flex-col gap-4 flex-1 min-h-0">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-2 flex-1 min-w-0">
@@ -230,23 +259,50 @@ const LSToolNearbyPage = () => {
               </Button>
             </div>
           </div>
-          <div className="space-y-2 w-32">
-            <Label>Country (ISO3)</Label>
-            <Input
-              placeholder="e.g. POL"
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 3))}
-              maxLength={3}
-            />
-          </div>
-          <div className="space-y-2 w-40">
-            <Label>Postcode</Label>
-            <Input
-              placeholder="Postcode"
-              value={postcode}
-              onChange={(e) => setPostcode(e.target.value)}
-            />
-          </div>
+          {searchType === 'postcode' ? (
+            <>
+              <div className="space-y-2 w-32">
+                <Label>Country (ISO3)</Label>
+                <Input
+                  placeholder="e.g. POL"
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 3))}
+                  maxLength={3}
+                />
+              </div>
+              <div className="space-y-2 w-40">
+                <Label>Postcode</Label>
+                <Input
+                  placeholder="Postcode"
+                  value={postcode}
+                  onChange={(e) => setPostcode(e.target.value)}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2 w-36">
+                <Label>Latitude</Label>
+                <Input
+                  placeholder="e.g. 51.927766"
+                  type="text"
+                  inputMode="decimal"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2 w-36">
+                <Label>Longitude</Label>
+                <Input
+                  placeholder="e.g. 15.507537"
+                  type="text"
+                  inputMode="decimal"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                />
+              </div>
+            </>
+          )}
           <div className="space-y-2 w-28">
             <Label>Range (m)</Label>
             <Input
@@ -275,7 +331,11 @@ const LSToolNearbyPage = () => {
               <ResizablePanel defaultSize={70} minSize={30} className="min-h-0 overflow-hidden">
                 <div className="h-full flex flex-col">
                   <div className="flex-1 min-h-0">
-                    <LocationsMapView locations={locations} />
+                    <LocationsMapView
+                      locations={locations}
+                      searchOrigin={lastGeolocationSearch ? { lat: lastGeolocationSearch.lat, lng: lastGeolocationSearch.lng } : undefined}
+                      searchRadiusM={lastGeolocationSearch?.radiusM}
+                    />
                   </div>
                 </div>
               </ResizablePanel>

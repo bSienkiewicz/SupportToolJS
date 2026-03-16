@@ -372,7 +372,7 @@ const LSToolPage = () => {
       <div className='p-4 flex flex-col gap-3 flex-1 min-h-0'>
         <div className='flex gap-4'>
           <div className='space-y-2 flex-1'>
-            <Label>Location Provider ID</Label>
+            <Label>Location Provider</Label>
             <div className="flex gap-2 flex-1">
               <Button
                 variant="outline"
@@ -480,6 +480,10 @@ const LSToolPage = () => {
             setSelectedLocation(null)
           }
         }}
+        onFetchOpeningTimes={handleFetchOpeningTimes}
+        openingTimes={selectedLocation ? openingTimes[String(selectedLocation.id)] : undefined}
+        openingTimesLoading={selectedLocation ? openingTimesLoading[String(selectedLocation.id)] ?? false : false}
+        openingTimesError={selectedLocation ? openingTimesError[String(selectedLocation.id)] ?? null : null}
       />
     </div>
   )

@@ -2,17 +2,22 @@ import React, { useMemo, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/renderer/src/components/ui/dialog'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Button } from '@/renderer/src/components/ui/button'
-import type { DdoLocation } from '../types'
+import type { DdoLocation, OpeningTimesData } from '../types'
 import { toast } from 'sonner'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Badge } from '@/renderer/src/components/ui/badge'
-import { LucideCopy, LucideTag } from 'lucide-react'
+import { LucideCopy, LucideTag, LucideClock } from 'lucide-react'
 import { LocationMap } from './LocationMap'
 
 type LocationDetailsDialogProps = {
   open: boolean
   location: DdoLocation | null
   onOpenChange: (open: boolean) => void
+  /** When provided, the dialog can fetch and show opening times from the location's links. */
+  onFetchOpeningTimes?: (location: DdoLocation, href: string) => void
+  openingTimes?: OpeningTimesData
+  openingTimesLoading?: boolean
+  openingTimesError?: string | null
 }
 
 const CopyParameterButton = ({parameter, value}: {parameter: string, value: string}) => {
@@ -36,8 +41,21 @@ export function LocationDetailsDialog({
   open,
   location,
   onOpenChange,
+  onFetchOpeningTimes,
+  openingTimes,
+  openingTimesLoading = false,
+  openingTimesError = null,
 }: LocationDetailsDialogProps) {
   const [showRawJson, setShowRawJson] = useState(false)
+  const openingLink = location && Array.isArray(location.links)
+    ? location.links.find((l: { rel: string }) => l.rel === 'openingTimesRules')
+    : null
+  const embeddedRules = location
+    ? (location as { locationOpeningTimesRules?: { openingTimesRules?: OpeningTimesData['openingTimesRules'] } }).locationOpeningTimesRules?.openingTimesRules
+    : undefined
+  const effectiveOpeningData = openingTimes ?? (embeddedRules && embeddedRules.length > 0 ? { openingTimesRules: embeddedRules } : undefined)
+  const showOpeningSection = (openingLink != null && onFetchOpeningTimes != null) || effectiveOpeningData != null || openingTimesError != null
+
   const rawJson = useMemo(
     () => (location ? JSON.stringify(location, null, 2) : ''),
     [location],
@@ -119,6 +137,41 @@ export function LocationDetailsDialog({
                     </Badge>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {showOpeningSection && (
+              <div className="mt-2 space-y-1">
+                <Label className="flex items-center gap-1">
+                  <LucideClock className="size-4" />
+                  Opening times
+                </Label>
+                {!effectiveOpeningData && openingLink != null && onFetchOpeningTimes && (
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => onFetchOpeningTimes(location, openingLink.href)}
+                    disabled={openingTimesLoading}
+                  >
+                    {openingTimesLoading ? 'Loading opening times…' : 'Fetch opening times'}
+                  </Button>
+                )}
+                {effectiveOpeningData && Array.isArray(effectiveOpeningData.openingTimesRules) && (
+                  <div className="text-xs space-y-0.5">
+                    {effectiveOpeningData.openingTimesRules.map((rule, idx) => (
+                      <div key={idx}>
+                        <span className="font-semibold">{rule.rule}:</span>{' '}
+                        {Array.isArray(rule.openingClosingTimes) &&
+                          rule.openingClosingTimes
+                            .map((t) => `${t.openingAt ?? ''}-${t.closingAt ?? ''}`)
+                            .join(', ')}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {openingTimesError && (
+                  <div className="text-xs text-red-600">{openingTimesError}</div>
+                )}
               </div>
             )}
 

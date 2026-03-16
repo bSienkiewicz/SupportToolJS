@@ -362,7 +362,7 @@ const LSToolNearbyPage = () => {
 
         <div className="flex-1 min-h-0 flex flex-col">
           <ResizablePanelGroup className="flex-1 min-h-0">
-            <ResizablePanel defaultSize={70} minSize={30} className="min-h-0 overflow-hidden">
+            <ResizablePanel defaultSize={70} minSize={'50%'} maxSize={'70%'} className="min-h-0 overflow-hidden">
               <div className="h-full flex flex-col relative">
                 <div className="flex-1 min-h-0 relative">
                   <LocationsMapView
@@ -392,12 +392,12 @@ const LSToolNearbyPage = () => {
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={30} minSize={20} className="min-h-0 flex flex-col overflow-hidden pl-2">
+            <ResizablePanel defaultSize={30} minSize={30} className="min-h-0 flex flex-col overflow-hidden pl-2">
               {locations.length === 0 ? (
                 <p className="text-sm text-muted-foreground p-4">
                   {hasSearched
                     ? 'No locations found. Try a different postcode or range.'
-                    : 'Select coordinates on the map (Geolocation mode) or enter postcode and country, then click Search.'}
+                    : 'Search for the location to display nearby points.'}
                 </p>
               ) : (
                 <>
@@ -459,6 +459,10 @@ const LSToolNearbyPage = () => {
           setLocationDialogOpen(open)
           if (!open) setSelectedLocation(null)
         }}
+        onFetchOpeningTimes={handleFetchOpeningTimes}
+        openingTimes={selectedLocation ? openingTimes[String(selectedLocation.id)] : undefined}
+        openingTimesLoading={selectedLocation ? openingTimesLoading[String(selectedLocation.id)] ?? false : false}
+        openingTimesError={selectedLocation ? openingTimesError[String(selectedLocation.id)] ?? null : null}
       />
     </div>
   )

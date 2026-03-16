@@ -380,6 +380,49 @@ app.whenReady().then(() => {
     }
   )
 
+  // Send HTTP request from main process (avoids CORS in renderer).
+  ipcMain.handle(
+    'app:sendRequest',
+    async (
+      _e,
+      payload: { url: string; method: string; headers: Record<string, string>; body: string }
+    ): Promise<{ ok: boolean; status: number; statusText: string; headers: Record<string, string>; body: string; error?: string }> => {
+      try {
+        const { url, method = 'POST', headers = {}, body } = payload
+        if (!url?.trim()) {
+          return { ok: false, status: 0, statusText: '', headers: {}, body: '', error: 'URL is required' }
+        }
+        const response = await fetch(url, {
+          method: method || 'POST',
+          headers: { ...headers },
+          body: body || undefined,
+        })
+        const responseHeaders: Record<string, string> = {}
+        response.headers.forEach((v, k) => {
+          responseHeaders[k] = v
+        })
+        const bodyText = await response.text()
+        return {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          headers: responseHeaders,
+          body: bodyText,
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          ok: false,
+          status: 0,
+          statusText: '',
+          headers: {},
+          body: '',
+          error: message,
+        }
+      }
+    }
+  )
+
   // Execute NRQL via New Relic GraphQL API; returns results array or error.
   ipcMain.handle(
     'app:executeNrql',

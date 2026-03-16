@@ -5,8 +5,13 @@ import Navigation from '@/renderer/src/layout/Navigation'
 import { ROUTES, getPathFromHash } from '@/renderer/src/routes'
 import AlertManagement from '@/renderer/src/features/alerts/pages/AlertManagement'
 import { FooterProvider, FooterSlot } from '@/renderer/src/context/FooterContext'
+import { RequestProvider } from '@/renderer/src/context/RequestContext'
 import AlertAudit from '@/renderer/src/features/alerts/pages/AlertAudit'
 import { TooltipProvider } from '@/renderer/src/components/ui/tooltip'
+import RequestPage from './features/reprint/pages/RequestPage'
+import { LSToolCredentialsProvider } from './features/lstool/context/LSToolCredentialsContext'
+import LSToolPage from './features/lstool/pages/LSToolPage'
+import LSToolNearbyPage from './features/lstool/pages/LSToolNearbyPage'
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<string>(getPathFromHash)
@@ -30,18 +35,27 @@ function App(): React.JSX.Element {
   return (
     <TooltipProvider>
       <FooterProvider>
+        <RequestProvider>
         <div className="flex flex-col h-screen">
           <div className="titlebar"></div>
           <Navigation currentPage={page} onPageChange={onPageChange} />
-          <main className="min-h-0 flex-1 overflow-y-auto px-3">
+          <main className="min-h-0 flex-1 overflow-y-auto">
             {page === ROUTES.SETTINGS && <SettingsPage />}
             {page === ROUTES.ALERTS && <div className="p-6">Alerts</div>}
             {page === ROUTES.ALERTS_MANAGEMENT && <AlertManagement />}
             {page === ROUTES.ALERTS_AUDIT && <AlertAudit />}
+            {page === ROUTES.DM_REQUESTS && <RequestPage />}
+            {(page === ROUTES.LSTOOL_LOCATIONS || page === ROUTES.LSTOOL_NEARBY) && (
+              <LSToolCredentialsProvider>
+                {page === ROUTES.LSTOOL_LOCATIONS && <LSToolPage />}
+                {page === ROUTES.LSTOOL_NEARBY && <LSToolNearbyPage />}
+              </LSToolCredentialsProvider>
+            )}
             <Toaster />
           </main>
           <FooterSlot />
         </div>
+        </RequestProvider>
       </FooterProvider>
     </TooltipProvider>
   )

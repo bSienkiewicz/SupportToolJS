@@ -56,3 +56,21 @@ export interface ExecuteNrqlResult {
   data: unknown[] | null
   error: string | null
 }
+
+/** Payload for sendRequest (HTTP from main process, avoids CORS). */
+export interface SendRequestPayload {
+  url: string
+  method?: string
+  headers?: Record<string, string>
+  body: string
+}
+
+/** Result of sendRequest. */
+export interface SendRequestResult {
+  ok: boolean
+  status: number
+  statusText: string
+  headers: Record<string, string>
+  body: string
+  error?: string
+}

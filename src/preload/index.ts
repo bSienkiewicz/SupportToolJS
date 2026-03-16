@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, ExecuteNrqlResult } from '@/types/api'
+import type { NrAlert, GetNRAlertsForStackResult, SaveNRAlertsForStackResult, ExecuteNrqlResult, SendRequestPayload, SendRequestResult } from '@/types/api'
 
 const api = {
   getVersion: () => ipcRenderer.invoke('app:getVersion') as Promise<string>,
@@ -27,6 +27,8 @@ const api = {
     ipcRenderer.invoke('app:saveNRAlertsForStack', stack, alerts) as Promise<SaveNRAlertsForStackResult>,
   executeNrql: (nrqlQuery: string) =>
     ipcRenderer.invoke('app:executeNrql', nrqlQuery) as Promise<ExecuteNrqlResult>,
+  sendRequest: (payload: SendRequestPayload) =>
+    ipcRenderer.invoke('app:sendRequest', payload) as Promise<SendRequestResult>,
   checkForUpdate: () =>
     ipcRenderer.invoke('app:checkForUpdate') as Promise<{
       updateAvailable: boolean

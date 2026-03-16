@@ -122,6 +122,16 @@
   }
 }
 
+/* Leaflet: Tailwind preflight sets img { max-width: 100% } which breaks tile layout */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+}
+
+/* Keep map below dialogs (Radix/shadcn dialogs use z-index 50+) */
+.leaflet-container {
+  z-index: 0;
+}
+
 .titlebar {
   height: 30px;
   border-bottom: 1px solid #e0e0e0;

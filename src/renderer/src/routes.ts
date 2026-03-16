@@ -12,7 +12,16 @@ export const NAV = [
       { key: 'ALERTS_AUDIT', label: 'Alert Audit', path: '/alerts-audit', description: 'Find missing alerts and readjust thresholds' },
     ],
   },
-  { key: 'REPRINT', label: 'Reprint', path: '/reprint' },
+  { key: 'DM_REQUESTS', label: 'DM Requests', path: '/dm-requests' },
+  {
+    key: 'LSTOOL',
+    label: 'LS Tool', 
+    path: '/lstool-locations', 
+    submenus: [
+      { key: 'LSTOOL_LOCATIONS', label: 'Locations', path: '/lstool/locations' },
+      { key: 'LSTOOL_NEARBY', label: 'Nearby Locations', path: '/lstool/nearby' },
+    ]
+  },
 ] as const
 
 export const SETTINGS_PATH = '/settings'
@@ -49,6 +58,8 @@ export const ROUTES = ROUTES_BUILD as {
   ALERTS: '/alerts'
   ALERTS_MANAGEMENT: '/alerts-management'
   ALERTS_AUDIT: '/alerts-audit'
-  REPRINT: '/reprint'
+  DM_REQUESTS: '/dm-requests'
+  LSTOOL_LOCATIONS: '/lstool-locations'
+  LSTOOL_NEARBY: '/lstool-nearby'
   SETTINGS: '/settings'
 }

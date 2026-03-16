@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import AlertHeader from '@/renderer/src/components/Header'
+import AlertHeader from '@/renderer/src/features/alerts/components/Header'
 import { AlertListRow } from '@/renderer/src/features/alerts/components/AlertListRow'
 import { EditAlertDialog } from '@/renderer/src/features/alerts/components/EditAlertDialog'
 import type { NrAlert } from '@/types/alerts'
@@ -174,8 +174,8 @@ const AlertManagement = () => {
           onAddAlert={handleAddAlert}
         />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <div className="flex flex-col gap-2 p-2">
+      <div className="min-h-0 flex-1 overflow-auto p-4">
+        <div className="flex flex-col gap-2">
           {filteredAlertsWithIndex.map(({ alert, originalIndex }) => (
             <AlertListRow
               key={`alert-${originalIndex}`}

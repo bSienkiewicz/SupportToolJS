@@ -21,7 +21,7 @@ const Navigation = ({ currentPage, onPageChange }: Props) => {
   const [openValue, setOpenValue] = useState('')
 
   return (
-    <nav className="w-full p-2 flex items-center gap-1">
+    <nav className="w-full px-4 py-2 flex items-center gap-1">
       <NavigationMenu value={openValue} onValueChange={setOpenValue} className="flex-1 max-w-none justify-start">
         <NavigationMenuList className="flex w-full gap-1">
           {NAV.map((item) =>

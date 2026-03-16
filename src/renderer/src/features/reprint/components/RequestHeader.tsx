@@ -1,5 +1,4 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/renderer/src/components/ui/select'
-import React from 'react'
 import type { ApiType, RequestMethod } from '@/renderer/src/features/reprint/requestConfig'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
 import { Button } from '@/renderer/src/components/ui/button'

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/renderer/src/components/ui/dialog'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Button } from '@/renderer/src/components/ui/button'

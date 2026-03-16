@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState, useRef } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Input } from '@/renderer/src/components/ui/input'
 import { Button } from '@/renderer/src/components/ui/button'

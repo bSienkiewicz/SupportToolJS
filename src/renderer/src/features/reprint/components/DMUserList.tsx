@@ -13,7 +13,7 @@ import {
 } from '@/renderer/src/components/ui/dialog'
 import { SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/renderer/src/components/ui/sheet'
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from 'lucide-react'
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { DMUser } from '../dmUsers'
 import { DM_STACKS } from '../dmUsers'
 import { DMUserForm, type DMUserFormValues } from './DMUserForm'

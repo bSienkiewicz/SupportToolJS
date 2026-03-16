@@ -1,6 +1,5 @@
 import { Button } from '@/renderer/src/components/ui/button'
 import { Sheet } from '@/renderer/src/components/ui/sheet'
-import React from 'react'
 import DMUserList from './DMUserList'
 import type { DMUser } from '../dmUsers'
 import { hasRestCredentials, hasSoapCredentials } from '../dmUsers'

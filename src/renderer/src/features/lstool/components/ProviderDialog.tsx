@@ -1,4 +1,3 @@
-import React from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/renderer/src/components/ui/dialog'
 import { Input } from '@/renderer/src/components/ui/input'
 import type { LocationProvider } from '../types'

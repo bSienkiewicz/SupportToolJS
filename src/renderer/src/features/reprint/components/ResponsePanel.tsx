@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { CodeEditor } from '@/renderer/src/components/CodeEditor'
 import { Button } from '@/renderer/src/components/ui/button'
 import { useRequest } from '@/renderer/src/context/RequestContext'

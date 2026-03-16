@@ -1,4 +1,3 @@
-import React from 'react'
 import { Virtuoso } from 'react-virtuoso'
 import { Label } from '@/renderer/src/components/ui/label'
 import { Button } from '@/renderer/src/components/ui/button'

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import LSToolHeader from '../components/LSToolHeader'
 import { useLSToolCredentials } from '../context/LSToolCredentialsContext'
 import { Label } from '@/renderer/src/components/ui/label'

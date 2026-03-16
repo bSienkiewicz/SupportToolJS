@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { RequestHeader } from '@/renderer/src/features/reprint/components/RequestHeader'
 import { RequestEditor } from '@/renderer/src/features/reprint/components/RequestEditor'
 import { ResponsePanel } from '@/renderer/src/features/reprint/components/ResponsePanel'

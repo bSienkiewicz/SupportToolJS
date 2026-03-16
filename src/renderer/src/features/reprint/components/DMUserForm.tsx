@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/renderer/src/components/ui/button'
 import { Input } from '@/renderer/src/components/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/renderer/src/components/ui/input-group'

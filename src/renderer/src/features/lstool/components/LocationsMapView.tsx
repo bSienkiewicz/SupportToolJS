@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import type { LatLngBoundsLiteral } from 'leaflet'

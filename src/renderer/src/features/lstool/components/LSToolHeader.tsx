@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/renderer/src/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/renderer/src/components/ui/sheet'
 import { Label } from '@/renderer/src/components/ui/label'

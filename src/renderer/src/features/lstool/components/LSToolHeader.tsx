@@ -5,6 +5,7 @@ import { Label } from '@/renderer/src/components/ui/label'
 import { Input } from '@/renderer/src/components/ui/input'
 import { useLSToolCredentials } from '../context/LSToolCredentialsContext'
 import { ButtonGroup } from '@/renderer/src/components/ui/button-group'
+import { LucideMailbox, LucideMapPin } from 'lucide-react'
 
 type LSToolHeaderProps = {
   title?: string
@@ -41,6 +42,7 @@ const LSToolHeader = ({ title = 'LS Tool', nearbySearchType, onNearbySearchTypeC
                 className="gap-2"
                 onClick={() => onNearbySearchTypeChange('geolocation')}
               >
+                <LucideMapPin />
                 Geolocation
               </Button>
               <Button
@@ -49,6 +51,7 @@ const LSToolHeader = ({ title = 'LS Tool', nearbySearchType, onNearbySearchTypeC
                 className="gap-2"
                 onClick={() => onNearbySearchTypeChange('postcode')}
               >
+                <LucideMailbox />
                 Postcode
               </Button>
             </ButtonGroup>

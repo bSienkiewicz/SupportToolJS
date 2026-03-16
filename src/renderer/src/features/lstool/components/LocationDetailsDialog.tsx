@@ -78,26 +78,28 @@ export function LocationDetailsDialog({
               </div>
               <div className="space-y-1">
                 <div>
-                  <span className="font-semibold">Address:</span>{' '}
-                  {location.structuredAddress?.street || location.address}
-                  {(location.structuredAddress?.city ?? location.city) &&
-                    `, ${location.structuredAddress?.city ?? location.city}`}
-                  {(location.structuredAddress?.postCode ?? location.postCode) &&
-                    ` ${location.structuredAddress?.postCode ?? location.postCode}`}
-                  {(location.structuredAddress?.countryCode ?? location.countryCode) &&
-                    `, ${location.structuredAddress?.countryCode ?? location.countryCode}`}
+                  <CopyParameterButton
+                    parameter="Address"
+                    value={
+                      [
+                        location.structuredAddress?.street || location.address,
+                        location.structuredAddress?.city ?? location.city,
+                        location.structuredAddress?.postCode ?? location.postCode,
+                        location.structuredAddress?.countryCode ?? location.countryCode,
+                      ]
+                        .filter(Boolean)
+                        .join(', ') || '—'
+                    }
+                  />
                 </div>
                 <div className="space-y-1">
-                  <span className="font-semibold">Location type:</span>{' '}
-                  {location.locationType ?? '—'}
+                  <CopyParameterButton parameter="Location type" value={location.locationType ?? '—'} />
                 </div>
                 <div className="space-y-1">
-                  <span className="font-semibold">Cash on delivery:</span>{' '}
-                  {location.cashOnDelivery ? 'Yes' : 'No'}
+                  <CopyParameterButton parameter="Cash on delivery" value={location.cashOnDelivery ? 'Yes' : 'No'} />
                 </div>
                 <div className="space-y-1">
-                  <span className="font-semibold">Drop off:</span>{' '}
-                  {location.dropOff ? 'Yes' : 'No'}
+                  <CopyParameterButton parameter="Drop off" value={location.dropOff ? 'Yes' : 'No'} />
                 </div>
               </div>
             </div>

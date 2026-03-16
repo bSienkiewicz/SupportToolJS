@@ -39,13 +39,14 @@ const LSToolNearbyPage = () => {
   const [retailerId, setRetailerId] = useState<string>('')
   const [retailerDialogOpen, setRetailerDialogOpen] = useState(false)
   const [retailerSearch, setRetailerSearch] = useState('')
-  const [searchType, setSearchType] = useState<'postcode' | 'geolocation'>('postcode')
+  const [searchType, setSearchType] = useState<'postcode' | 'geolocation'>('geolocation')
   const [countryCode, setCountryCode] = useState('')
   const [postcode, setPostcode] = useState('')
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [range, setRange] = useState(String(DEFAULT_RANGE))
   const [lastGeolocationSearch, setLastGeolocationSearch] = useState<{ lat: number; lng: number; radiusM: number } | null>(null)
+  const [mapSelectedPoint, setMapSelectedPoint] = useState(false)
   const [locations, setLocations] = useState<DdoLocation[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -123,6 +124,18 @@ const LSToolNearbyPage = () => {
 
   const rangeNum = range.trim() === '' ? NaN : Number(range.trim())
   const isRangeValid = Number.isFinite(rangeNum) && rangeNum > 0
+  const handleMapClick = useCallback((lat: number, lng: number) => {
+    setLatitude(String(lat))
+    setLongitude(String(lng))
+    setMapSelectedPoint(true)
+  }, [])
+
+  const handleClearMapSelection = useCallback(() => {
+    setLatitude('')
+    setLongitude('')
+    setMapSelectedPoint(false)
+  }, [])
+
   const isSearchDisabled = useMemo(() => {
     if (!retailerId.trim()) return true
     if (!isRangeValid) return true
@@ -136,6 +149,10 @@ const LSToolNearbyPage = () => {
 
   const handleSearch = useCallback(async () => {
     if (isSearchDisabled) return
+    if (rangeNum > 50000) {
+      toast.error('Range cannot be greater than 50000 meters')
+      return
+    }
     const radiusM = rangeNum
     setError(null)
     setIsLoading(true)
@@ -185,6 +202,18 @@ const LSToolNearbyPage = () => {
 
   const selectedRetailer = retailers.find((r) => r.id === retailerId)
 
+  const mapSearchOrigin = useMemo(
+    () => (lastGeolocationSearch ? { lat: lastGeolocationSearch.lat, lng: lastGeolocationSearch.lng } : undefined),
+    [lastGeolocationSearch?.lat, lastGeolocationSearch?.lng],
+  )
+  const placeholderOrigin = useMemo(() => {
+    if (!mapSelectedPoint || !latitude.trim() || !longitude.trim()) return undefined
+    const lat = Number.parseFloat(latitude.trim())
+    const lng = Number.parseFloat(longitude.trim())
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined
+    return { lat, lng }
+  }, [mapSelectedPoint, latitude, longitude])
+
   const handleFetchOpeningTimes = useCallback(
     async (location: DdoLocation, href: string) => {
       const locId = String(location.id)
@@ -224,7 +253,10 @@ const LSToolNearbyPage = () => {
       <LSToolHeader
         title="Find Nearby Locations"
         nearbySearchType={searchType}
-        onNearbySearchTypeChange={setSearchType}
+        onNearbySearchTypeChange={(type) => {
+          setSearchType(type)
+          if (type === 'postcode') setMapSelectedPoint(false)
+        }}
       />
       <div className="p-4 flex flex-col gap-4 flex-1 min-h-0">
         <div className="flex flex-wrap items-end gap-4">
@@ -309,6 +341,7 @@ const LSToolNearbyPage = () => {
             <Input
               type="number"
               min={1}
+              max={15000}
               placeholder="e.g. 1000"
               value={range}
               onChange={(e) => setRange(e.target.value)}
@@ -327,63 +360,83 @@ const LSToolNearbyPage = () => {
           <div className="text-sm text-destructive">{error}</div>
         )}
 
-        {hasSearched && (
-          <div className="flex-1 min-h-0 flex flex-col">
-            <ResizablePanelGroup className="flex-1 min-h-0">
-              <ResizablePanel defaultSize={70} minSize={30} className="min-h-0 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 min-h-0">
-                    <LocationsMapView
-                      locations={locations}
-                      searchOrigin={lastGeolocationSearch ? { lat: lastGeolocationSearch.lat, lng: lastGeolocationSearch.lng } : undefined}
-                      searchRadiusM={lastGeolocationSearch?.radiusM}
-                    />
-                  </div>
+        <div className="flex-1 min-h-0 flex flex-col">
+          <ResizablePanelGroup className="flex-1 min-h-0">
+            <ResizablePanel defaultSize={70} minSize={30} className="min-h-0 overflow-hidden">
+              <div className="h-full flex flex-col relative">
+                <div className="flex-1 min-h-0 relative">
+                  <LocationsMapView
+                    locations={locations}
+                    searchOrigin={mapSearchOrigin}
+                    searchRadiusM={lastGeolocationSearch?.radiusM}
+                    placeholderOrigin={placeholderOrigin}
+                    onMapClick={searchType === 'geolocation' ? handleMapClick : undefined}
+                  />
+                  {searchType === 'geolocation' && (
+                    <div className="absolute bottom-2 left-2 z-40 rounded-md bg-background/90 px-3 py-1 text-xs shadow">
+                      Click on the map to select the coordinates
+                    </div>
+                  )}
+                  {mapSelectedPoint && searchType === 'geolocation' && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-2 right-2 z-50 shadow-md"
+                      onClick={handleClearMapSelection}
+                    >
+                      Cancel selection
+                    </Button>
+                  )}
                 </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={30} minSize={20} className="min-h-0 flex flex-col overflow-hidden pl-2">
-                {locations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4">No locations found. Try a different postcode or range.</p>
-                ) : (
-                  <>
-                    <div className="sticky top-0 z-10 bg-background pb-2 shrink-0">
-                      <InputGroup>
-                        <InputGroupInput
-                          placeholder="Search list by store, address, postcode…"
-                          value={listSearch}
-                          onChange={(e) => setListSearch(e.target.value)}
-                        />
-                        <InputGroupAddon>
-                          <LucideSearch className="size-4" />
-                        </InputGroupAddon>
-                      </InputGroup>
-                    </div>
-                    <div className="flex-1 min-h-0 flex flex-col pt-2">
-                      {filteredLocationsForList.length === 0 ? (
-                        <p className="text-sm text-muted-foreground pl-2">
-                          {listSearch.trim() ? 'No matches for this search.' : 'No locations.'}
-                        </p>
-                      ) : (
-                        <LocationsList
-                          locations={filteredLocationsForList}
-                          openingTimes={openingTimes}
-                          openingTimesLoading={openingTimesLoading}
-                          openingTimesError={openingTimesError}
-                          onSelectLocation={(loc) => {
-                            setSelectedLocation(loc)
-                            setLocationDialogOpen(true)
-                          }}
-                          onFetchOpeningTimes={handleFetchOpeningTimes}
-                        />
-                      )}
-                    </div>
-                  </>
-                )}
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </div>
-        )}
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={30} minSize={20} className="min-h-0 flex flex-col overflow-hidden pl-2">
+              {locations.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4">
+                  {hasSearched
+                    ? 'No locations found. Try a different postcode or range.'
+                    : 'Select coordinates on the map (Geolocation mode) or enter postcode and country, then click Search.'}
+                </p>
+              ) : (
+                <>
+                  <div className="sticky top-0 z-10 bg-background pb-2 shrink-0">
+                    <InputGroup>
+                      <InputGroupInput
+                        placeholder="Search list by store, address, postcode…"
+                        value={listSearch}
+                        onChange={(e) => setListSearch(e.target.value)}
+                      />
+                      <InputGroupAddon>
+                        <LucideSearch className="size-4" />
+                      </InputGroupAddon>
+                    </InputGroup>
+                  </div>
+                  <div className="flex-1 min-h-0 flex flex-col pt-2">
+                    {filteredLocationsForList.length === 0 ? (
+                      <p className="text-sm text-muted-foreground pl-2">
+                        {listSearch.trim() ? 'No matches for this search.' : 'No locations.'}
+                      </p>
+                    ) : (
+                      <LocationsList
+                        locations={filteredLocationsForList}
+                        openingTimes={openingTimes}
+                        openingTimesLoading={openingTimesLoading}
+                        openingTimesError={openingTimesError}
+                        onSelectLocation={(loc) => {
+                          setSelectedLocation(loc)
+                          setLocationDialogOpen(true)
+                        }}
+                        onFetchOpeningTimes={handleFetchOpeningTimes}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       </div>
 
       <RetailerDialog

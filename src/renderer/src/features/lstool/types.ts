@@ -16,6 +16,11 @@ export type LocationProviderInfo = {
   ownStores?: boolean
 }
 
+export type LocationDistance = {
+  value: number
+  unit?: string
+}
+
 export type DdoLocation = {
   id: string
   storeId?: string
@@ -36,6 +41,7 @@ export type DdoLocation = {
   dropOff?: boolean
   locationProvider?: LocationProviderInfo
   links?: LocationLink[]
+  distance?: LocationDistance
   [key: string]: unknown
 }
 

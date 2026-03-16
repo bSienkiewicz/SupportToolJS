@@ -5,7 +5,7 @@ import { Button } from '@/renderer/src/components/ui/button'
 import type { DdoLocation, OpeningTimesData } from '../types'
 import { toast } from 'sonner'
 import { Badge } from '@/renderer/src/components/ui/badge'
-import { LucideCopy, LucideHome, LucideMapPin, LucideTag, LucideVan } from 'lucide-react'
+import { LucideCopy, LucideFootprints, LucideHome, LucideMapPin, LucideTag, LucideVan } from 'lucide-react'
 
 type LocationsListProps = {
   locations: DdoLocation[]
@@ -62,6 +62,11 @@ function LocationCard({
         {(loc.structuredAddress?.countryCode ?? loc.countryCode) &&
           `, ${loc.structuredAddress?.countryCode ?? loc.countryCode}`}
       </div>
+      {loc.distance && typeof loc.distance.value === 'number' && (
+        <div className="text-xs text-gray-500 flex items-center gap-1">
+          <LucideFootprints size={16} /> {(loc.distance.value).toFixed(2)} m
+        </div>
+      )}
       {(loc.latitude != null || loc.longitude != null) && (
         <div className="text-xs text-gray-500 flex items-center gap-1">
           <LucideMapPin size={16} /> {loc.latitude ?? '-'}, {loc.longitude ?? '-'}

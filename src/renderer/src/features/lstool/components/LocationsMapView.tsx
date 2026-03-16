@@ -1,7 +1,21 @@
-import React, { useEffect } from 'react'
-import { Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
+import React, { useEffect, useMemo } from 'react'
+import { Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
 import type { LatLngBoundsLiteral } from 'leaflet'
 import type { DdoLocation } from '../types'
+
+/** Listens for map click and calls onMapClick with lat/lng. Stops all propagation so the map does not pan. */
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      L.DomEvent.stopPropagation(e.originalEvent)
+      L.DomEvent.preventDefault(e.originalEvent)
+      e.originalEvent.stopImmediatePropagation()
+      onMapClick(e.latlng.lat, e.latlng.lng)
+    },
+  })
+  return null
+}
 
 /** Calls invalidateSize after mount so tiles align when map is in a resizable panel or dialog. */
 function MapInvalidateSize() {
@@ -70,6 +84,10 @@ type LocationsMapViewProps = {
   /** When set (e.g. after a geolocation search), a circle and origin marker are drawn. */
   searchOrigin?: { lat: number; lng: number }
   searchRadiusM?: number
+  /** When set, map clicks report coordinates here (e.g. for geolocation placeholder). */
+  onMapClick?: (lat: number, lng: number) => void
+  /** When set (e.g. after a map click in geolocation mode), a marker is drawn for the placeholder location. */
+  placeholderOrigin?: { lat: number; lng: number }
 }
 
 /**
@@ -83,6 +101,8 @@ export function LocationsMapView({
   className,
   searchOrigin,
   searchRadiusM,
+  onMapClick,
+  placeholderOrigin,
 }: LocationsMapViewProps) {
   const withCoords = locations.filter(
     (loc) =>
@@ -93,7 +113,14 @@ export function LocationsMapView({
   )
   const hasSearchOrigin = searchOrigin != null && Number.isFinite(searchOrigin.lat) && Number.isFinite(searchOrigin.lng)
   const hasSearchRadius = searchRadiusM != null && searchRadiusM > 0
-  const originCenter: [number, number] | null = hasSearchOrigin ? [searchOrigin.lat, searchOrigin.lng] : null
+  const originCenter = useMemo<[number, number] | null>(
+    () => (hasSearchOrigin ? [searchOrigin!.lat, searchOrigin!.lng] : null),
+    [hasSearchOrigin, searchOrigin?.lat, searchOrigin?.lng],
+  )
+  const placeholderCenter: [number, number] | null =
+    placeholderOrigin != null && Number.isFinite(placeholderOrigin.lat) && Number.isFinite(placeholderOrigin.lng)
+      ? [placeholderOrigin.lat, placeholderOrigin.lng]
+      : null
 
   return (
     <div className={className ?? 'h-full w-full rounded-md border overflow-hidden bg-muted/30'}>
@@ -105,6 +132,7 @@ export function LocationsMapView({
         className="h-full w-full"
       >
         <MapInvalidateSize />
+        {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
         <FitBounds locations={locations} searchOrigin={originCenter} searchRadiusM={hasSearchRadius ? searchRadiusM : undefined} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -134,6 +162,21 @@ export function LocationsMapView({
             }}
           >
             <Popup>Search origin (radius: {searchRadiusM ?? 0} m)</Popup>
+          </CircleMarker>
+        )}
+        {placeholderCenter && (
+          <CircleMarker
+            center={placeholderCenter}
+            radius={10}
+            pathOptions={{
+              color: '#16a34a',
+              fillColor: '#16a34a',
+              fillOpacity: 0.8,
+              weight: 2,
+              dashArray: '4 4',
+            }}
+          >
+            <Popup>Selected for next search</Popup>
           </CircleMarker>
         )}
         {withCoords.map((loc) => (

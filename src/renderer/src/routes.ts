@@ -18,8 +18,8 @@ export const NAV = [
     label: 'LS Tool', 
     path: '/lstool-locations', 
     submenus: [
-      { key: 'LSTOOL_LOCATIONS', label: 'Locations', path: '/lstool/locations' },
-      { key: 'LSTOOL_NEARBY', label: 'Nearby Locations', path: '/lstool/nearby' },
+      { key: 'LSTOOL_LOCATIONS', label: 'Location Services', path: '/lstool/locations', description: 'View DDO locations and details for a given location provider' },
+      { key: 'LSTOOL_NEARBY', label: 'Nearby Locations', path: '/lstool/nearby', description: 'Display nearby delivery points from a given location' },
     ]
   },
 ] as const

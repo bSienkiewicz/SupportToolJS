@@ -29,7 +29,7 @@ export function RequestHeader({
           <SelectContent className='text-xs'>
             <SelectGroup>
               <SelectItem value="REPRINT">Reprint</SelectItem>
-              <SelectItem value="CREATE_CONSIGNMENT">Create Consignment</SelectItem>
+              {/* <SelectItem value="CREATE_CONSIGNMENT">Create Consignment</SelectItem> */}
             </SelectGroup>
           </SelectContent>
         </Select>
